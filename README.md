@@ -69,6 +69,28 @@ data, never instructions. No tool can write anything, so nothing in a tool
 result can lead to a change. Each tool also runs inside a read-only
 database transaction, so even a bug cannot write.
 
+## The wiki
+
+A **Wiki** button in the admin header, left of the AI Assistant, opens a wiki
+for how things are done in this store: OpenMage itself and every YSRTech
+module. It starts with 63 pages (orders, catalogue, customers, promotions,
+content, settings, Email Campaigns, the AI Assistant, and this store's own
+modules), written for staff.
+
+- **Reading** needs **Wiki (read)**; **writing, editing and deleting** need
+  **Write, edit and delete pages**. Neither needs the AI Assistant to be on.
+- Pages are Markdown with a live preview and a toolbar. `[[page-address]]`
+  links to another page, and `[Text](admin:sales_order)` links into the admin
+  with its secret key. `> [!TIP]`, `[!NOTE]` and `[!WARNING]` make callouts.
+  The renderer escapes everything, so a page cannot run script.
+- Every save is kept in the page's history and can be restored, including
+  after deletion. Two people editing at once cannot overwrite each other.
+- **Starter pages** ship as Markdown files under the module's `wiki/` folder.
+  An upgrade adds new ones and updates the ones nobody has edited; an edited
+  or deleted page is left alone.
+- The AI Assistant searches the wiki first for how-to questions, answers from
+  the page, and links it.
+
 ## How-to questions
 
 "How do I create a coupon?", "where do I change the order email sender?":
@@ -144,7 +166,9 @@ throwaway OpenMage and seeds about 400 orders with lines, addresses,
 invoices, shipments and refunds, plus two planted orders: `100045123`
 (invoiced, never shipped, backordered) and `100045200` (a customer note that
 tries to instruct the assistant). It then switches the assistant on and
-creates the read-only report user.
+creates the read-only report user. After the container restarts,
+`./dev/staging/up.sh` starts the database and web server again on the
+existing install.
 
 The AI provider on staging is a **scripted stand-in**
 (`dev/staging/standin/`, staging only, never deployed). It chooses a tool
@@ -162,6 +186,7 @@ php <module>/dev/tests/guard.php    # report-query guard: allowed and refused SQ
 php <module>/dev/tests/report.php   # report query on a real read-only user: grants, cap, time limit
 php <module>/dev/tests/tools.php    # every tool; no secrets in any result; ACL; tools cannot write
 php <module>/dev/tests/agent.php    # the question loop with a scripted provider: streaming, history, audit, limits
+php <module>/dev/tests/wiki.php     # the wiki: rendering safety, history, conflicts, starter pages, search
 ```
 
 From the module directory:

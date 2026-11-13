@@ -67,16 +67,19 @@ async function shot(page, name) {
 (async () => {
   // A role that may use the chat and look up orders, and nothing else
   php(`
-    $role = Mage::getModel('admin/roles')->load('AA orders only', 'role_name');
-    if (!$role->getId()) {
-      $role->setRoleName('AA orders only')->setRoleType('G')->setTreeLevel(1)->setParentId(0)->save();
-      Mage::getModel('admin/rules')->setRoleId($role->getId())->setResources(['__root__', 'admin/dashboard', 'admin/ysrtech_adminassistant', 'admin/ysrtech_adminassistant/tools', 'admin/ysrtech_adminassistant/tools/orders'])->saveRel();
-    }
+    $resources = ['__root__', 'admin/dashboard', 'admin/ysrtech_adminassistant', 'admin/ysrtech_adminassistant/tools', 'admin/ysrtech_adminassistant/tools/orders', 'admin/ysrtech_wiki'];
     $user = Mage::getModel('admin/user')->loadByUsername('aa_limited');
+    $roleId = $user->getId() ? (int) $user->getRole()->getId() : 0;
+    if (!$roleId) {
+      $role = Mage::getModel('admin/roles')->setData(['role_name' => 'AA orders only', 'role_type' => 'G', 'tree_level' => 1, 'parent_id' => 0])->save();
+      $roleId = (int) $role->getId();
+    }
+    Mage::getModel('admin/rules')->setRoleId($roleId)->setResources($resources)->saveRel();
     if (!$user->getId()) {
       $user->setData(['username' => 'aa_limited', 'firstname' => 'Limited', 'lastname' => 'Staff', 'email' => 'aa_limited@example.invalid', 'password' => 'Limited12345', 'is_active' => 1])->save();
-      $user->setRoleIds([$role->getId()])->setRoleUserId($user->getId())->saveRelations();
+      $user->setRoleIds([$roleId])->setRoleUserId($user->getId())->saveRelations();
     }
+    echo 'role ' . $roleId;
   `);
   setConfig('general/enabled', 1);
 
@@ -136,7 +139,8 @@ async function shot(page, name) {
   check('who clicked a campaign is answered', /\d+ people clicked/.test(answer), answer);
 
   answer = await ask(page, 'How do I create a coupon code?');
-  check('a how-to question points to the real menu page, linked', /Shopping Cart Price Rules/.test(answer) && !!(await (await lastAnswer(page)).$('a[href*="promo_quote"]')), answer);
+  check('a how-to question is answered from the wiki, with a link to the page', /Shopping Cart Price Rules/.test(answer) && !!(await (await lastAnswer(page)).$('a[href*="ysrtech_wiki/view/page/coupons-and-cart-rules"]')), answer);
+  check('and the steps\' admin links still work in the chat', !!(await (await lastAnswer(page)).$('a[href*="promo_quote"]')), answer);
   answer = await ask(page, 'Where do I change the order email sender?');
   check('a where-is-the-setting question finds it', /Sales Emails > Order > New Order Confirmation Email Sender/.test(answer), answer);
 
@@ -194,6 +198,59 @@ async function shot(page, name) {
   php("Mage::getModel('core/config')->saveConfig('ysrtech_adminassistant/report/table_mode', 'recommended'); Mage::getModel('core/config')->deleteConfig('ysrtech_adminassistant/report/tables'); Mage::app()->getCacheInstance()->flush();");
   check('no script errors on any page', page.errors.length === 0, page.errors.join('; '));
 
+  console.log('\nThe wiki');
+  await page.goto(BASE + '/admin/dashboard/');
+  const wikiBox = await page.$eval('#ysrwk-link', (a) => a.getBoundingClientRect().right);
+  const aiBox = await page.$eval('.ysraa-launch', (b) => b.getBoundingClientRect().left);
+  check('the Wiki button is in the header, just left of the AI Assistant', wikiBox <= aiBox && aiBox - wikiBox < 40, wikiBox + ' / ' + aiBox);
+  await page.click('#ysrwk-link');
+  await page.waitForSelector('.ysrwk-cards');
+  check('the wiki home lists the categories', (await page.$$('.ysrwk-card')).length >= 8);
+  await page.fill('.ysrwk-search input', 'refund credit memo');
+  await page.press('.ysrwk-search input', 'Enter');
+  await page.waitForSelector('.ysrwk-results li');
+  check('search finds the refund page first', (await page.innerText('.ysrwk-results li:first-child > a')) === 'Refund an order (credit memo)');
+  await page.click('.ysrwk-results li:first-child > a');
+  await page.waitForSelector('.ysrwk-article');
+  check('the page renders, with its admin link', !!(await page.$('.ysrwk-article a.wk-admin[href*="sales_creditmemo"]')));
+  // Edit with live preview, save, then restore the first version
+  await page.click('.ysrwk-acts a:has-text("Edit")');
+  await page.waitForSelector('#ysrwk-content');
+  await page.fill('#ysrwk-content', (await page.inputValue('#ysrwk-content')) + '\n\n> [!WARNING]\n> Refunds over $200 need the owner\'s approval.\n');
+  await page.waitForFunction(() => document.querySelector('#ysrwk-preview .wk-warning'), null, { timeout: 5000 }).catch(() => {});
+  check('the preview follows the typing', (await page.innerText('#ysrwk-preview')).includes('Refunds over $200'));
+  await page.fill('input[name="note"]', 'approval rule');
+  await page.click('.ysrwk-savebar button[type="submit"]');
+  await page.waitForSelector('.ysrwk-article');
+  check('saving shows the page with the change', (await page.innerText('.ysrwk-article')).includes('Refunds over $200') && /Last changed by admin/.test(await page.innerText('.ysrwk-meta')));
+  await page.click('.ysrwk-acts a:has-text("History")');
+  await page.waitForSelector('.ysrwk-history');
+  check('the history lists the edit with its note', (await page.innerText('.ysrwk-history')).includes('approval rule'));
+  page.once('dialog', (d) => d.accept());
+  await page.click('.ysrwk-history tbody tr:last-child button:has-text("Restore")');
+  await page.waitForSelector('.ysrwk-article');
+  check('restoring the first version takes the change out again', !(await page.innerText('.ysrwk-article')).includes('Refunds over $200'));
+  // A link to a page nobody has written yet opens the editor for it
+  await page.goto(BASE + '/admin/ysrtech_wiki/view/page/packing-rules/');
+  await page.waitForSelector('#ysrwk-content');
+  check('a page that does not exist yet opens the editor, address filled in', (await page.inputValue('input[name="url_key"]')) === 'packing-rules');
+  // Every admin link in every starter page opens a page
+  const routes = JSON.parse(php("$db = Mage::getSingleton('core/resource')->getConnection('core_read'); preg_match_all('/\\(admin:([a-z0-9_\\/.-]+)\\)/i', implode(' ', $db->fetchCol('SELECT content FROM ' . Mage::getSingleton('core/resource')->getTableName('ysrtech_adminassistant/wiki_page') . ' WHERE is_deleted = 0')), $m); echo json_encode(array_values(array_unique($m[1])));"));
+  // Pardes's own modules are not installed on staging
+  const elsewhere = ['possync', 'system_config/edit/section/ysrtech_guesttocustomer', 'system_config/edit/section/ysrtech_otplogin'];
+  const dead = [];
+  for (const route of routes.filter((r) => !elsewhere.includes(r))) {
+    const parts = route.split('/');
+    const url = BASE + '/admin/' + parts[0] + '/' + (parts[1] || 'index') + '/' + parts.slice(2).join('/');
+    // Visited in the page itself: a request from outside it carries a
+    // different browser identity, and OpenMage ends the session over that
+    const res = await page.goto(url, { waitUntil: 'domcontentloaded' });
+    // Judged by the page itself, not its text: a grid can list a CMS page titled "404 Not Found"
+    const title = await page.title();
+    if (!res || res.status() !== 200 || /404|not found|access denied|log in/i.test(title) || !(await page.$('.header-right'))) { dead.push(route + ' (' + (res ? res.status() : 'no response') + ', "' + title + '")'); }
+  }
+  check('all ' + routes.length + ' admin links in the starter pages open a page (' + elsewhere.length + ' are Pardes-only)', dead.length === 0, dead.join(', '));
+
   console.log('\nA role with orders only');
   const limited = await login(browser, 'aa_limited', 'Limited12345');
   await limited.keyboard.press('Control+K');
@@ -202,6 +259,11 @@ async function shot(page, name) {
   check('asking about customers: the role does not include it', /role does not include/i.test(answer), answer);
   answer = await ask(limited, 'What\'s wrong with order 100045123?');
   check('asking about an order works', /not shipped/i.test(answer), answer);
+  check('a role that may read the wiki gets the Wiki button', !!(await limited.$('#ysrwk-link')));
+  await limited.goto(BASE + '/admin/ysrtech_wiki/view/page/refund-an-order/');
+  check('and can read pages, with no Edit button', !!(await limited.$('.ysrwk-article')) && !(await limited.$('.ysrwk-acts a:has-text("Edit")')) && !(await limited.$('.ysrwk-nav a:has-text("New page")')));
+  await limited.goto(BASE + '/admin/ysrtech_wiki/edit/');
+  check('the editor refuses it', !(await limited.$('#ysrwk-content')) && /cannot change|not change/i.test(await limited.innerText('.messages')));
   await limited.goto(BASE + '/admin/ysrtech_assistantaudit/index/');
   check('the audit log is not open to this role', !(await limited.$('.ysraa-audit')));
 
@@ -210,7 +272,7 @@ async function shot(page, name) {
   // The drawer is still open from before, with a chat in it: reload and
   // reopen, and the notice must replace the remembered chat
   await page.goto(BASE + '/admin/dashboard/');
-  await page.waitForSelector('.ysraa-drawer');
+  await page.waitForSelector('.ysraa-launch');
   if (await page.isVisible('.ysraa-drawer')) { await page.click('.ysraa-head [data-close]'); }
   await page.click('.ysraa-launch');
   check('the administrator sees why it is off and a link to the settings', (await page.innerText('.ysraa-off')).includes('switched off') && !!(await page.$('.ysraa-welcome a[href*="ysrtech_adminassistant"]')));

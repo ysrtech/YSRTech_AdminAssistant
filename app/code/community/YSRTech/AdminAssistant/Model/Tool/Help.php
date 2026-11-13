@@ -39,6 +39,18 @@ class YSRTech_AdminAssistant_Model_Tool_Help extends YSRTech_AdminAssistant_Mode
                     'query' => ['type' => 'string', 'description' => 'Words to look for in menu names, e.g. "credit memo", "coupon", "newsletter"'],
                 ]],
             ],
+            'wiki_search' => [
+                'description' => 'Search this store\'s wiki: how-to pages for OpenMage and every YSRTech module, written for and by this store\'s staff. Returns matching pages with a snippet. Search it first for any how-to or "how does X work" question, then read the best page with wiki_page.',
+                'parameters'  => ['properties' => [
+                    'query' => ['type' => 'string', 'description' => 'Words to look for, e.g. "credit memo refund", "schedule campaign", "pos sync"'],
+                ], 'required' => ['query']],
+            ],
+            'wiki_page' => [
+                'description' => 'Read one wiki page in full, by its address from wiki_search. Answer from it, and link the page.',
+                'parameters'  => ['properties' => [
+                    'page' => ['type' => 'string', 'description' => 'The page address (url_key)'],
+                ], 'required' => ['page']],
+            ],
             'settings_search' => [
                 'description' => 'Find where a setting lives under System > Configuration in this store: matches setting names, groups, sections and their help text. Returns the full path to click through, the config path, its current value (secret settings withheld) and a link to the page. Use it for "where do I change..." questions.',
                 'parameters'  => ['properties' => [
@@ -56,6 +68,14 @@ class YSRTech_AdminAssistant_Model_Tool_Help extends YSRTech_AdminAssistant_Mode
 
         if ($name === 'settings_search') {
             return $this->_settings($args);
+        }
+
+        if ($name === 'wiki_search' || $name === 'wiki_page') {
+            if (!$this->_allowed('admin/' . YSRTech_AdminAssistant_Model_Wiki::ACL_READ)) {
+                Mage::throwException('This admin user\'s role does not include the wiki.');
+            }
+
+            return $name === 'wiki_search' ? $this->_wikiSearch($args) : $this->_wikiPage($args);
         }
 
         Mage::throwException('Unknown tool');
@@ -292,6 +312,62 @@ class YSRTech_AdminAssistant_Model_Tool_Help extends YSRTech_AdminAssistant_Mode
             'query'    => (string) $args['query'],
             'settings' => $list,
             'about'    => 'Values shown are the default scope; a website or store view can override them. Only sections this admin may open are searched.',
+        ]];
+    }
+
+    private function _wikiSearch(array $args): array
+    {
+        $results = Mage::getSingleton('ysrtech_adminassistant/wiki')->search((string) ($args['query'] ?? ''), 8);
+
+        return ['rows' => count($results), 'data' => [
+            'query' => (string) ($args['query'] ?? ''),
+            'pages' => array_map(fn ($r) => [
+                'page'     => $r['url_key'],
+                'title'    => $r['title'],
+                'category' => $r['category'],
+                'snippet'  => $r['excerpt'],
+                'link'     => $this->_adminUrl('adminhtml/ysrtech_wiki/view', ['page' => $r['url_key']]),
+            ], $results),
+            'about' => $results ? 'Read the best match with wiki_page before answering.' : 'No wiki page matches. Answer from admin_menu, settings_search and general OpenMage knowledge, and say the wiki has no page on it.',
+        ]];
+    }
+
+    private function _wikiPage(array $args): array
+    {
+        $wiki = Mage::getSingleton('ysrtech_adminassistant/wiki');
+        $page = $wiki->load(YSRTech_AdminAssistant_Model_Wiki::slug((string) ($args['page'] ?? '')));
+
+        if (!$page) {
+            Mage::throwException('There is no wiki page with that address. Use wiki_search to find one.');
+        }
+
+        // Links as real addresses, so the model can pass them on and the chat
+        // can show them: (admin:route) becomes the admin URL with its secret
+        // key, and [[page|text]] a link to that wiki page
+        $markdown = preg_replace_callback('/\]\(admin:([a-z0-9_\/.-]+)\)/i', function ($m) {
+            [$path, $params] = YSRTech_AdminAssistant_Model_Wiki::adminRoute($m[1]);
+            $url = $this->_adminUrl($path, $params);
+
+            return $url !== '' ? '](' . $url . ')' : $m[0];
+        }, (string) $page['content']);
+        $titles   = $wiki->titles();
+        $markdown = preg_replace_callback('/\[\[([a-z0-9][a-z0-9-]*)(?:\|([^\]]+))?\]\]/i', function ($m) use ($titles) {
+            $key = strtolower($m[1]);
+            $url = $this->_adminUrl('adminhtml/ysrtech_wiki/view', ['page' => $key]);
+            $txt = isset($m[2]) && $m[2] !== '' ? $m[2] : ($titles[$key] ?? $key);
+
+            return $url !== '' ? '[' . $txt . '](' . $url . ')' : $m[0];
+        }, $markdown);
+        $page['content'] = $markdown;
+
+        return ['rows' => 1, 'data' => [
+            'page'         => $page['url_key'],
+            'title'        => $page['title'],
+            'category'     => $page['category'],
+            'link'         => $this->_adminUrl('adminhtml/ysrtech_wiki/view', ['page' => $page['url_key']]),
+            'last_changed' => self::local($page['updated_at']) . ($page['updated_by'] !== '' ? ' by ' . $page['updated_by'] : ' (starter page)'),
+            'markdown'     => mb_substr($page['content'], 0, 20000),
+            'about'        => 'Written by this store\'s staff (or shipped as a starter page). Its links are real admin addresses; pass them on as they are.',
         ]];
     }
 

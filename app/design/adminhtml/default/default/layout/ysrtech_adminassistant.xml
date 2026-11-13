@@ -5,6 +5,8 @@
     <default>
         <reference name="before_body_end">
             <block type="ysrtech_adminassistant/adminhtml_panel" name="ysrtech_adminassistant.panel" />
+            <!-- After the panel, so it can find the AI button's place -->
+            <block type="ysrtech_adminassistant/adminhtml_wikiLink" name="ysrtech_adminassistant.wiki_link" />
         </reference>
     </default>
 

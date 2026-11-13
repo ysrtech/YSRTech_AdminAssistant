@@ -1,0 +1,221 @@
+<?php
+/** @var YSRTech_AdminAssistant_Block_Adminhtml_Wiki $this */
+$wiki  = $this->wiki();
+$mode  = (string) $this->getMode();
+$page  = $this->getPage();
+$e     = function ($v) { return $this->escapeHtml((string) $v); };
+$tree  = $wiki->tree();
+$edit  = (bool) $this->getCanEdit();
+$here  = is_array($page) ? (string) ($page['url_key'] ?? '') : '';
+?>
+<link rel="stylesheet" href="<?php echo $e($this->assetUrl('wiki.css')) ?>" />
+<div class="ysrwk">
+    <aside class="ysrwk-nav">
+        <a class="ysrwk-home" href="<?php echo $e($this->getUrl('*/*/index')) ?>"><?php echo $this->__('Wiki') ?></a>
+        <form class="ysrwk-search" method="get" action="<?php echo $e($this->getUrl('*/*/index')) ?>">
+            <input type="search" name="q" value="<?php echo $e($this->getQuery()) ?>" placeholder="<?php echo $this->__('Search the wiki') ?>" aria-label="<?php echo $this->__('Search the wiki') ?>" />
+        </form>
+        <?php if ($edit): ?>
+            <a class="ysrwk-btn primary block" href="<?php echo $e($this->getUrl('*/*/edit')) ?>">+ <?php echo $this->__('New page') ?></a>
+        <?php endif ?>
+        <?php foreach ($tree as $category => $pages): ?>
+            <details class="ysrwk-cat" <?php echo $here === '' || in_array($here, array_column($pages, 'url_key'), true) ? 'open' : '' ?>>
+                <summary><?php echo $e($category) ?> <span><?php echo count($pages) ?></span></summary>
+                <ul>
+                    <?php foreach ($pages as $p): ?>
+                        <li><a href="<?php echo $e($this->pageUrl($p['url_key'])) ?>" class="<?php echo $p['url_key'] === $here ? 'on' : '' ?>"><?php echo $e($p['title']) ?></a></li>
+                    <?php endforeach ?>
+                </ul>
+            </details>
+        <?php endforeach ?>
+    </aside>
+
+    <main class="ysrwk-main">
+    <?php if ($mode === 'home'): ?>
+        <h1><?php echo $this->__('Wiki') ?></h1>
+        <p class="ysrwk-lede"><?php echo $this->__('How things are done in this store: OpenMage itself, and every YSRTech module. The AI Assistant reads these pages too, so what is written here is what it tells people.') ?></p>
+        <div class="ysrwk-cards">
+            <?php foreach ($tree as $category => $pages): ?>
+                <section class="ysrwk-card">
+                    <h2><?php echo $e($category) ?></h2>
+                    <ul>
+                        <?php foreach (array_slice($pages, 0, 8) as $p): ?>
+                            <li><a href="<?php echo $e($this->pageUrl($p['url_key'])) ?>"><?php echo $e($p['title']) ?></a></li>
+                        <?php endforeach ?>
+                        <?php if (count($pages) > 8): ?><li class="more"><?php echo $this->__('and %d more in the list', count($pages) - 8) ?></li><?php endif ?>
+                    </ul>
+                </section>
+            <?php endforeach ?>
+        </div>
+        <?php $recent = $wiki->recent(); if ($recent): ?>
+            <h2 class="ysrwk-sub"><?php echo $this->__('Recent changes') ?></h2>
+            <ul class="ysrwk-recent">
+                <?php foreach ($recent as $r): ?>
+                    <li><a href="<?php echo $e($this->pageUrl($r['url_key'])) ?>"><?php echo $e($r['title']) ?></a>
+                        <span><?php echo $e($r['username']) ?> · <?php echo $e($this->local($r['created_at'])) ?><?php echo $r['note'] !== '' ? ' · ' . $e($r['note']) : '' ?></span></li>
+                <?php endforeach ?>
+            </ul>
+        <?php endif ?>
+
+    <?php elseif ($mode === 'search'): ?>
+        <h1><?php echo $this->__('Search: %s', $e($this->getQuery())) ?></h1>
+        <?php $results = (array) $this->getResults(); if (!$results): ?>
+            <p class="ysrwk-lede"><?php echo $this->__('No page mentions that.') ?>
+            <?php if ($edit): ?> <a href="<?php echo $e($this->getUrl('*/*/edit', ['new' => YSRTech_AdminAssistant_Model_Wiki::slug((string) $this->getQuery())])) ?>"><?php echo $this->__('Write one') ?></a><?php endif ?></p>
+        <?php endif ?>
+        <ol class="ysrwk-results">
+            <?php foreach ($results as $r): ?>
+                <li><a href="<?php echo $e($this->pageUrl($r['url_key'])) ?>"><?php echo $e($r['title']) ?></a> <span class="cat"><?php echo $e($r['category']) ?></span>
+                    <p><?php echo $e($r['excerpt']) ?></p></li>
+            <?php endforeach ?>
+        </ol>
+
+    <?php elseif ($mode === 'view'): ?>
+        <?php $md = $wiki->markdown(); $html = $md->render((string) $page['content']); $toc = $md->headings(); ?>
+        <div class="ysrwk-crumbs"><?php echo $e($page['category']) ?></div>
+        <div class="ysrwk-head">
+            <h1><?php echo $e($page['title']) ?></h1>
+            <div class="ysrwk-acts">
+                <?php if ($edit): ?><a class="ysrwk-btn" href="<?php echo $e($this->getUrl('*/*/edit', ['id' => $page['page_id']])) ?>"><?php echo $this->__('Edit') ?></a><?php endif ?>
+                <a class="ysrwk-btn" href="<?php echo $e($this->getUrl('*/*/history', ['id' => $page['page_id']])) ?>"><?php echo $this->__('History') ?></a>
+            </div>
+        </div>
+        <div class="ysrwk-meta"><?php echo $page['updated_by'] !== '' ? $this->__('Last changed by %s, %s', $e($page['updated_by']), $e($this->local($page['updated_at']))) : $this->__('Starter page from the AI Assistant module, %s', $e($this->local($page['updated_at']))) ?></div>
+        <div class="ysrwk-body">
+            <?php if (count($toc) >= 3): ?>
+                <nav class="ysrwk-toc"><b><?php echo $this->__('On this page') ?></b>
+                    <?php foreach ($toc as $h): ?><a class="l<?php echo (int) $h['level'] ?>" href="#<?php echo $e($h['id']) ?>"><?php echo $e($h['text']) ?></a><?php endforeach ?>
+                </nav>
+            <?php endif ?>
+            <article class="ysrwk-article"><?php echo $html ?></article>
+        </div>
+
+    <?php elseif ($mode === 'edit'): ?>
+        <?php $id = $this->getPageId(); ?>
+        <h1><?php echo $id ? $this->__('Edit: %s', $e($page['title'])) : $this->__('New page') ?></h1>
+        <form class="ysrwk-form" method="post" action="<?php echo $e($this->getUrl('*/*/save')) ?>" id="ysrwk-form">
+            <input type="hidden" name="form_key" value="<?php echo $e(Mage::getSingleton('core/session')->getFormKey()) ?>" />
+            <input type="hidden" name="page_id" value="<?php echo (int) $id ?>" />
+            <input type="hidden" name="version" value="<?php echo (int) ($page['version'] ?? 0) ?>" />
+            <div class="ysrwk-fields">
+                <label class="wide"><?php echo $this->__('Title') ?><input type="text" name="title" required maxlength="255" value="<?php echo $e($page['title'] ?? '') ?>" /></label>
+                <label><?php echo $this->__('Category') ?><input type="text" name="category" list="ysrwk-cats" maxlength="120" value="<?php echo $e($page['category'] ?? '') ?>" /></label>
+                <label><?php echo $this->__('Address') ?><input type="text" name="url_key" maxlength="120" pattern="[a-z0-9-]*" value="<?php echo $e($page['url_key'] ?? '') ?>" placeholder="<?php echo $this->__('from the title') ?>" /></label>
+                <label class="narrow"><?php echo $this->__('Order') ?><input type="number" name="sort_order" value="<?php echo (int) ($page['sort_order'] ?? 500) ?>" /></label>
+                <datalist id="ysrwk-cats"><?php foreach (array_keys($tree) as $c): ?><option value="<?php echo $e($c) ?>"></option><?php endforeach ?></datalist>
+            </div>
+            <div class="ysrwk-tools" role="toolbar">
+                <button type="button" data-wrap="**" title="<?php echo $this->__('Bold') ?>"><b>B</b></button>
+                <button type="button" data-wrap="*" title="<?php echo $this->__('Italic') ?>"><i>I</i></button>
+                <button type="button" data-line="## " title="<?php echo $this->__('Heading') ?>">H</button>
+                <button type="button" data-line="- " title="<?php echo $this->__('List') ?>">• <?php echo $this->__('List') ?></button>
+                <button type="button" data-line="1. " title="<?php echo $this->__('Steps') ?>">1. <?php echo $this->__('Steps') ?></button>
+                <button type="button" data-insert="[[page-address|Text]]"><?php echo $this->__('Wiki link') ?></button>
+                <button type="button" data-insert="[Credit Memos](admin:sales_creditmemo)"><?php echo $this->__('Admin link') ?></button>
+                <button type="button" data-insert="&#10;> [!TIP]&#10;> &#10;"><?php echo $this->__('Tip') ?></button>
+                <button type="button" data-insert="&#10;> [!WARNING]&#10;> &#10;"><?php echo $this->__('Warning') ?></button>
+                <button type="button" data-insert="&#10;| Column | Column |&#10;|---|---|&#10;| | |&#10;"><?php echo $this->__('Table') ?></button>
+                <span class="spacer"></span>
+                <a href="#ysrwk-help" class="ysrwk-helplink"><?php echo $this->__('Formatting help') ?></a>
+            </div>
+            <div class="ysrwk-split">
+                <textarea name="content" id="ysrwk-content" spellcheck="true"><?php echo $e($page['content'] ?? '') ?></textarea>
+                <div class="ysrwk-preview ysrwk-article" id="ysrwk-preview" aria-live="polite"></div>
+            </div>
+            <div class="ysrwk-savebar">
+                <input type="text" name="note" maxlength="255" placeholder="<?php echo $this->__('What changed (optional, shown in the history)') ?>" />
+                <a class="ysrwk-btn" href="<?php echo $e($id ? $this->pageUrl((string) $page['url_key']) : $this->getUrl('*/*/index')) ?>"><?php echo $this->__('Cancel') ?></a>
+                <button type="submit" class="ysrwk-btn primary"><?php echo $this->__('Save') ?></button>
+            </div>
+        </form>
+        <?php if ($id): ?>
+            <form method="post" action="<?php echo $e($this->getUrl('*/*/delete')) ?>" class="ysrwk-delete" onsubmit="return confirm(<?php echo $e(json_encode($this->__('Delete this page? Its history is kept and it can be restored.'))) ?>)">
+                <input type="hidden" name="form_key" value="<?php echo $e(Mage::getSingleton('core/session')->getFormKey()) ?>" />
+                <input type="hidden" name="id" value="<?php echo (int) $id ?>" />
+                <button type="submit" class="ysrwk-btn danger"><?php echo $this->__('Delete page') ?></button>
+            </form>
+        <?php endif ?>
+        <section class="ysrwk-help" id="ysrwk-help">
+            <h2><?php echo $this->__('Formatting') ?></h2>
+            <div class="ysrwk-table"><table>
+                <tr><td><code>## Heading</code></td><td><?php echo $this->__('A section heading (### for a smaller one)') ?></td></tr>
+                <tr><td><code>**bold**</code> <code>*italic*</code> <code>`code`</code></td><td><?php echo $this->__('Emphasis, and names of buttons or fields as code') ?></td></tr>
+                <tr><td><code>1. First step</code></td><td><?php echo $this->__('Numbered steps; "- " for bullets; indent two spaces to nest') ?></td></tr>
+                <tr><td><code>[[credit-memos]]</code> <code>[[credit-memos|Refunds]]</code></td><td><?php echo $this->__('A link to another wiki page, by its address. A link to a page that does not exist yet shows in red; click it to write it.') ?></td></tr>
+                <tr><td><code>[Credit Memos](admin:sales_creditmemo)</code></td><td><?php echo $this->__('A link to a page in this admin, by its route (the part of the address after /admin/). Works with the admin\'s secret URL keys.') ?></td></tr>
+                <tr><td><code>[Site](https://example.com)</code></td><td><?php echo $this->__('An outside link; opens in a new tab') ?></td></tr>
+                <tr><td><code>&gt; [!TIP]</code> / <code>[!NOTE]</code> / <code>[!WARNING]</code></td><td><?php echo $this->__('A coloured box: the first line of a quote, then the text on lines starting with &gt;') ?></td></tr>
+                <tr><td><code>| a | b |</code> <?php echo $this->__('then') ?> <code>|---|---|</code></td><td><?php echo $this->__('A table') ?></td></tr>
+                <tr><td><code>![alt](/media/wysiwyg/pic.png)</code></td><td><?php echo $this->__('An image from the store\'s media folder, or https') ?></td></tr>
+            </table></div>
+        </section>
+        <script>
+        (function () {
+            var ta = document.getElementById('ysrwk-content'), pv = document.getElementById('ysrwk-preview'), timer = null, dirty = false, last = null;
+            var url = <?php echo json_encode($this->getUrl('*/*/preview')) ?>, key = <?php echo json_encode(Mage::getSingleton('core/session')->getFormKey()) ?>;
+            function preview() {
+                if (ta.value === last) { return; }
+                last = ta.value;
+                var f = new FormData(); f.append('form_key', key); f.append('content', ta.value);
+                fetch(url, { method: 'POST', body: f, credentials: 'same-origin' }).then(function (r) { return r.text(); }).then(function (h) { pv.innerHTML = h; });
+            }
+            ta.addEventListener('input', function () { dirty = true; clearTimeout(timer); timer = setTimeout(preview, 300); });
+            preview();
+            function replace(start, end, text, selStart, selEnd) {
+                ta.focus(); ta.setSelectionRange(start, end);
+                if (!document.execCommand || !document.execCommand('insertText', false, text)) { ta.setRangeText(text, start, end, 'end'); }
+                ta.setSelectionRange(selStart, selEnd); ta.dispatchEvent(new Event('input'));
+            }
+            document.querySelectorAll('.ysrwk-tools button').forEach(function (b) {
+                b.addEventListener('click', function () {
+                    var s = ta.selectionStart, en = ta.selectionEnd, sel = ta.value.slice(s, en);
+                    if (b.dataset.wrap) {
+                        var w = b.dataset.wrap;
+                        replace(s, en, w + (sel || 'text') + w, s + w.length, s + w.length + (sel || 'text').length);
+                    } else if (b.dataset.line) {
+                        var ls = ta.value.lastIndexOf('\n', s - 1) + 1;
+                        replace(ls, ls, b.dataset.line, s + b.dataset.line.length, en + b.dataset.line.length);
+                    } else if (b.dataset.insert) {
+                        replace(s, en, b.dataset.insert, s + b.dataset.insert.length, s + b.dataset.insert.length);
+                    }
+                });
+            });
+            document.getElementById('ysrwk-form').addEventListener('submit', function () { dirty = false; });
+            window.addEventListener('beforeunload', function (ev) { if (dirty) { ev.preventDefault(); ev.returnValue = ''; } });
+        })();
+        </script>
+
+    <?php elseif ($mode === 'history'): ?>
+        <?php $rev = $this->getRevision(); ?>
+        <div class="ysrwk-crumbs"><a href="<?php echo $e($this->pageUrl((string) $page['url_key'])) ?>"><?php echo $e($page['title']) ?></a><?php echo $page['is_deleted'] ? ' · ' . $this->__('deleted') : '' ?></div>
+        <h1><?php echo $this->__('History') ?></h1>
+        <table class="ysrwk-history">
+            <thead><tr><th><?php echo $this->__('When') ?></th><th><?php echo $this->__('Who') ?></th><th><?php echo $this->__('Note') ?></th><th><?php echo $this->__('Length') ?></th><th></th></tr></thead>
+            <tbody>
+            <?php foreach ((array) $this->getRevisions() as $i => $r): ?>
+                <tr class="<?php echo $rev && (int) $rev['revision_id'] === (int) $r['revision_id'] ? 'on' : '' ?>">
+                    <td><?php echo $e($this->local($r['created_at'])) ?><?php echo $i === 0 ? ' <em>' . $this->__('current') . '</em>' : '' ?></td>
+                    <td><?php echo $e($r['username'] !== '' ? $r['username'] : $this->__('AI Assistant module')) ?></td>
+                    <td><?php echo $e($r['note']) ?></td>
+                    <td><?php echo number_format((int) $r['length']) ?></td>
+                    <td class="acts">
+                        <a href="<?php echo $e($this->getUrl('*/*/history', ['id' => $page['page_id'], 'revision' => $r['revision_id']])) ?>"><?php echo $this->__('View') ?></a>
+                        <?php if ($edit && ($i > 0 || $page['is_deleted'])): ?>
+                            <form method="post" action="<?php echo $e($this->getUrl('*/*/restore')) ?>">
+                                <input type="hidden" name="form_key" value="<?php echo $e(Mage::getSingleton('core/session')->getFormKey()) ?>" />
+                                <input type="hidden" name="revision" value="<?php echo (int) $r['revision_id'] ?>" />
+                                <button type="submit" class="link"><?php echo $this->__('Restore') ?></button>
+                            </form>
+                        <?php endif ?>
+                    </td>
+                </tr>
+            <?php endforeach ?>
+            </tbody>
+        </table>
+        <?php if ($rev): ?>
+            <h2 class="ysrwk-sub"><?php echo $this->__('As it was on %s', $e($this->local($rev['created_at']))) ?></h2>
+            <article class="ysrwk-article ysrwk-old"><h1><?php echo $e($rev['title']) ?></h1><?php echo $wiki->markdown()->render((string) $rev['content']) ?></article>
+        <?php endif ?>
+    <?php endif ?>
+    </main>
+</div>

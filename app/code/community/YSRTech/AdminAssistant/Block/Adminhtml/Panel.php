@@ -49,6 +49,7 @@ class YSRTech_AdminAssistant_Block_Adminhtml_Panel extends Mage_Adminhtml_Block_
                 'email_activity' => $h->__('Reading email tracking'), 'campaign_recipients' => $h->__('Listing campaign recipients'),
                 'automation_results' => $h->__('Reading automation results'),
                 'admin_menu' => $h->__('Finding it in the menu'), 'settings_search' => $h->__('Finding the setting'),
+                'wiki_search' => $h->__('Searching the wiki'), 'wiki_page' => $h->__('Reading the wiki'),
                 'config_value' => $h->__('Reading settings'), 'cron_status' => $h->__('Checking cron'), 'recent_errors' => $h->__('Reading the logs'),
                 'store_overview' => $h->__('Reading store setup'), 'report_schema' => $h->__('Reading the report tables'), 'report_query' => $h->__('Running a report query'),
             ],

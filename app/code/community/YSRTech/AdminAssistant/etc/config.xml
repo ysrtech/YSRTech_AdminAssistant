@@ -2,7 +2,7 @@
 <config>
     <modules>
         <YSRTech_AdminAssistant>
-            <version>0.2.0</version>
+            <version>0.3.0</version>
         </YSRTech_AdminAssistant>
     </modules>
 
@@ -24,6 +24,12 @@
                     <audit>
                         <table>ysrtech_adminassistant_audit</table>
                     </audit>
+                    <wiki_page>
+                        <table>ysrtech_adminassistant_wiki_page</table>
+                    </wiki_page>
+                    <wiki_revision>
+                        <table>ysrtech_adminassistant_wiki_revision</table>
+                    </wiki_revision>
                 </entities>
             </ysrtech_adminassistant_resource>
         </models>
@@ -136,6 +142,18 @@
                                 </tools>
                             </children>
                         </ysrtech_adminassistant>
+                        <!-- The wiki stands on its own: reading it needs neither the
+                             chat nor the assistant being switched on -->
+                        <ysrtech_wiki translate="title" module="ysrtech_adminassistant">
+                            <title>Wiki (read)</title>
+                            <sort_order>77</sort_order>
+                            <children>
+                                <edit translate="title" module="ysrtech_adminassistant">
+                                    <title>Write, edit and delete pages</title>
+                                    <sort_order>10</sort_order>
+                                </edit>
+                            </children>
+                        </ysrtech_wiki>
                         <system>
                             <children>
                                 <ysrtech_adminassistant_audit translate="title" module="ysrtech_adminassistant">

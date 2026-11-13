@@ -23,6 +23,21 @@ class YSRTech_AdminAssistantStandin_Model_Client extends YSRTech_AdminAssistant_
         $last     = end($messages);
         $tools    = array_map(static fn ($t) => $t['function']['name'], $request['tools'] ?? []);
 
+        if ($last['role'] === 'tool' && ($request['tool_choice'] ?? '') !== 'none') {
+            $data = json_decode((string) $last['content'], true);
+            if (isset($data['pages'][0]['page']) && in_array('wiki_page', $tools, true)) {
+                $this->_stream($onChunk, '', [['index' => 0, 'id' => 'call_wp' . substr(md5($body), 0, 6), 'function' => ['name' => 'wiki_page', 'arguments' => json_encode(['page' => $data['pages'][0]['page']])]]]);
+
+                return 200;
+            }
+            // No wiki page: fall back to the admin menu, as the real prompt says
+            if (isset($data['pages']) && !$data['pages'] && in_array('admin_menu', $tools, true)) {
+                $this->_stream($onChunk, '', [['index' => 0, 'id' => 'call_am' . substr(md5($body), 0, 6), 'function' => ['name' => 'admin_menu', 'arguments' => json_encode(['query' => $data['query']])]]]);
+
+                return 200;
+            }
+        }
+
         if ($last['role'] === 'tool' || ($request['tool_choice'] ?? '') === 'none') {
             $this->_stream($onChunk, $this->_answer($messages));
 
@@ -61,7 +76,7 @@ class YSRTech_AdminAssistantStandin_Model_Client extends YSRTech_AdminAssistant_
         }
 
         if (preg_match('/^how (do|can) i\s+(.*?)\??$/', $q, $m)) {
-            return ['admin_menu', ['query' => $m[2]]];
+            return ['wiki_search', ['query' => $m[2]]];
         }
 
         if (preg_match('/order\s*#?\s*(\d{6,})/', $q, $m)) {
@@ -156,6 +171,12 @@ class YSRTech_AdminAssistantStandin_Model_Client extends YSRTech_AdminAssistant_
             case 'low_stock':
                 $rows = array_map(static fn ($p) => "| {$p['sku']} | {$p['name']} | {$p['qty']} |", $data['products']);
                 return "{$data['matched']} products are at or below 5 in stock:\n\n| SKU | Product | Qty |\n|---|---|---|\n" . implode("\n", $rows);
+
+            case 'wiki_page':
+                // The page's first numbered steps, and the link
+                preg_match_all('/^\d+\.\s+(.*)$/m', $data['markdown'], $steps);
+                $list = array_slice($steps[1], 0, 6);
+                return "From the wiki page [{$data['title']}]({$data['link']}):\n\n" . implode("\n", array_map(static fn ($t, $i) => ($i + 1) . '. ' . $t, $list, array_keys($list)));
 
             case 'admin_menu':
                 $paths = array_map(static fn ($e) => '- ' . (!empty($e['link']) ? '[' . $e['path'] . '](' . $e['link'] . ')' : $e['path']), $data['matches'] ?? $data['menu'] ?? []);
