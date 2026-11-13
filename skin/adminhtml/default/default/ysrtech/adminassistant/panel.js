@@ -28,56 +28,33 @@
   var controller = null;
   var loaded = false;
 
-  /* ---------- the trigger, in place of the header's search box ---------- */
+  /* ---------- the button, in place of the header's search box ---------- */
 
-  // A field like the search box it replaces: type and press Enter to ask,
-  // or press the icon to open the drawer. Ctrl/Cmd+K jumps to it.
-  var trigger = document.createElement('form');
-  trigger.className = 'ysraa-trigger';
-  trigger.setAttribute('role', 'search');
-  trigger.innerHTML = '<button type="button" class="ysraa-trigger-open" aria-controls="ysraa" title="' + esc(label('Open the AI Assistant')) + '">' +
-    '<span class="ysraa-spark" aria-hidden="true"></span></button>' +
-    '<input type="text" autocomplete="off" aria-label="' + esc(label('Ask the AI Assistant')) + '" placeholder="' +
-    esc(cfg.enabled ? label('Ask AI about the store…') : label('AI Assistant is switched off')) + '" />' +
-    '<kbd>' + (/Mac|iPhone|iPad/.test(navigator.platform || '') ? '⌘K' : 'Ctrl K') + '</kbd>';
-  var triggerInput = trigger.querySelector('input');
+  var button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'ysraa-launch';
+  button.setAttribute('aria-controls', 'ysraa');
+  button.innerHTML = '<span class="ysraa-spark" aria-hidden="true"></span><span>' + esc(label('AI Assistant')) + '</span>';
 
+  // The search box goes; the button takes its place, so it sits where the box was
   var search = document.getElementById('global_search');
   var searchBox = search ? (search.closest('fieldset') || search.parentNode) : null;
   var header = document.querySelector('.header-right');
-  if (searchBox && !cfg.enabled) {
-    // Switched off: the search box stays until the assistant is on; only the
-    // icon is added beside it, for the notice and the way to the settings
-    trigger.classList.add('compact');
-    searchBox.classList.add('ysraa-trigger-beside');
-    searchBox.appendChild(trigger);
-  } else if (searchBox) {
-    // Take the search box's place, so the trigger sits exactly where it was
+  if (searchBox) {
     Array.prototype.forEach.call(searchBox.children, function (child) { child.style.display = 'none'; });
-    searchBox.classList.add('ysraa-trigger-slot');
-    searchBox.appendChild(trigger);
+    searchBox.classList.add('ysraa-launch-slot');
+    searchBox.appendChild(button);
   } else if (header) {
-    // No search box (switched off, or not in this role): the same spot
     var slot = document.createElement('fieldset');
-    slot.className = 'ysraa-trigger-slot';
-    slot.appendChild(trigger);
+    slot.className = 'ysraa-launch-slot';
+    slot.appendChild(button);
     header.appendChild(slot);
   } else {
-    trigger.classList.add('floating');
-    document.body.appendChild(trigger);
+    button.classList.add('floating');
+    document.body.appendChild(button);
   }
 
-  trigger.querySelector('.ysraa-trigger-open').addEventListener('click', function () { root.hidden ? open() : close(); });
-  trigger.addEventListener('submit', function (e) {
-    e.preventDefault();
-    var text = triggerInput.value.trim();
-    triggerInput.value = '';
-    triggerInput.blur();
-    open().then(function () {
-      if (text && cfg.enabled) { ask(text); } else if (text) { input.value = text; }
-    });
-  });
-
+  button.addEventListener('click', function () { root.hidden ? open() : close(); });
   root.querySelectorAll('[data-close]').forEach(function (el) { el.addEventListener('click', close); });
   root.querySelector('[data-new]').addEventListener('click', newChat);
   root.querySelector('[data-history]').addEventListener('click', toggleHistory);
@@ -85,7 +62,7 @@
     if (e.key === 'Escape' && !root.hidden) { close(); }
     if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
       e.preventDefault();
-      root.hidden ? triggerInput.focus() : input.focus();
+      open();
     }
   });
 
