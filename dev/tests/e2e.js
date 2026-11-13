@@ -237,7 +237,9 @@ async function shot(page, name) {
   // Every admin link in every starter page opens a page
   const routes = JSON.parse(php("$db = Mage::getSingleton('core/resource')->getConnection('core_read'); preg_match_all('/\\(admin:([a-z0-9_\\/.-]+)\\)/i', implode(' ', $db->fetchCol('SELECT content FROM ' . Mage::getSingleton('core/resource')->getTableName('ysrtech_adminassistant/wiki_page') . ' WHERE is_deleted = 0')), $m); echo json_encode(array_values(array_unique($m[1])));"));
   // Pardes's own modules are not installed on staging
-  const elsewhere = ['possync', 'system_config/edit/section/ysrtech_guesttocustomer', 'system_config/edit/section/ysrtech_otplogin'];
+  const elsewhere = ['possync', 'system_config/edit/section/ysrtech_guesttocustomer', 'system_config/edit/section/ysrtech_otplogin',
+    'blcg_grid', 'system_config/edit/section/customgrid', 'manufacturer', 'system_config/edit/section/dc_catalog',
+    'm2api_apikey', 'system_config/edit/section/ysrtech_m2api'];
   const dead = [];
   for (const route of routes.filter((r) => !elsewhere.includes(r))) {
     const parts = route.split('/');

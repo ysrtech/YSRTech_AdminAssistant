@@ -73,7 +73,7 @@ database transaction, so even a bug cannot write.
 
 A **Wiki** button in the admin header, left of the AI Assistant, opens a wiki
 for how things are done in this store: OpenMage itself and every YSRTech
-module. It starts with 63 pages (orders, catalogue, customers, promotions,
+module. It starts with 67 pages (orders, catalogue, customers, promotions,
 content, settings, Email Campaigns, the AI Assistant, and this store's own
 modules), written for staff.
 
