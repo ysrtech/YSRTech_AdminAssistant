@@ -94,7 +94,17 @@ async function shot(page, name) {
   check('"How many orders shipped yesterday?" is answered from shipments', /\d+ orders\s+shipped yesterday/.test(answer), answer);
   check('the look-up is shown while it runs, then marked done', await page.$eval('.ysraa-step', (s) => s.classList.contains('ok') && s.textContent.includes('shipments')));
 
+  check('no blinking caret is left after the answer', (await page.$$('.ysraa-log .ysraa-caret')).length === 0);
+
+  // Frames that arrive late, as in a background tab: a repaint queued while
+  // the answer streamed must not draw the caret back once it has finished
+  await page.evaluate(() => {
+    window.requestAnimationFrame = (cb) => setTimeout(cb, 400);
+    window.cancelAnimationFrame = (id) => clearTimeout(id);
+  });
   answer = await ask(page, 'Top 20 customers this year');
+  await page.waitForTimeout(600);
+  check('nor after an answer whose last repaint came late', (await page.$$('.ysraa-log .ysraa-caret')).length === 0);
   const rows = await (await lastAnswer(page)).$$eval('table tbody tr', (r) => r.length);
   check('"Top 20 customers this year" comes back as a table of 20', rows === 20, rows + ' rows; ' + answer.slice(0, 200));
   await shot(page, '2-top-customers');

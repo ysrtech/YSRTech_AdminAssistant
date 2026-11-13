@@ -236,7 +236,7 @@
     var steps = null;
     var answer = null;
     var buffer = '';
-    var pending = false;
+    var frame = 0; // a repaint queued for the next frame, while text streams
     var thinking = el('div', 'ysraa-thinking', '');
     thinking.innerHTML = '<i></i><i></i><i></i>';
     log.appendChild(thinking);
@@ -256,8 +256,15 @@
     controller = window.AbortController ? new AbortController() : null;
 
     function paint() {
-      pending = false;
+      frame = 0;
       if (answer) { renderInto(answer, buffer, true); scrollDown(); }
+    }
+
+    /* The text so far is final: drop any queued repaint, which would draw
+       the caret back after this, and draw it without one. */
+    function settle() {
+      if (frame) { window.cancelAnimationFrame(frame); frame = 0; }
+      if (answer) { renderInto(answer, buffer); }
     }
 
     function onEvent(name, data) {
@@ -268,11 +275,13 @@
         if (thinking.parentNode) { thinking.remove(); }
         if (!answer) { answer = addAnswer(); }
         buffer += data.delta;
-        if (!pending) { pending = true; window.requestAnimationFrame(paint); }
+        if (!frame) { frame = window.requestAnimationFrame(paint); }
       } else if (name === 'tool') {
         if (thinking.parentNode) { thinking.remove(); }
         // Text the model wrote before deciding to look something up stays where it was
-        if (answer) { renderInto(answer, buffer); answer = null; buffer = ''; }
+        settle();
+        answer = null;
+        buffer = '';
         steps = steps || addSteps();
         addStep(steps, data.name, data.summary, false);
         log.appendChild(thinking);
@@ -285,7 +294,7 @@
         scrollDown();
       } else if (name === 'done') {
         if (thinking.parentNode) { thinking.remove(); }
-        if (answer) { renderInto(answer, buffer); }
+        settle();
       }
     }
 
@@ -310,7 +319,9 @@
       })
       .then(function () {
         if (thinking.parentNode) { thinking.remove(); }
-        if (answer) { renderInto(answer, buffer); }
+        settle();
+        // However the reply ended, no caret is left behind in the log
+        log.querySelectorAll('.ysraa-caret').forEach(function (c) { c.remove(); });
         root.querySelectorAll('.ysraa-step.run').forEach(function (s) { s.classList.remove('run'); });
         setBusy(false);
         controller = null;
