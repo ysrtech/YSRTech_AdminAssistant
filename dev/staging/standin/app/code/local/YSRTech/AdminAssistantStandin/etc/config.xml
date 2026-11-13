@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<config>
+    <modules>
+        <YSRTech_AdminAssistantStandin><version>0.1.0</version></YSRTech_AdminAssistantStandin>
+    </modules>
+    <global>
+        <models>
+            <ysrtech_adminassistant>
+                <rewrite>
+                    <ai_client>YSRTech_AdminAssistantStandin_Model_Client</ai_client>
+                </rewrite>
+            </ysrtech_adminassistant>
+        </models>
+    </global>
+</config>

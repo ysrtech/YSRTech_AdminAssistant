@@ -1,0 +1,19 @@
+{
+    "name": "ysrtech/adminassistant",
+    "description": "AI chat inside the OpenMage admin: staff ask about orders, customers, stock, sales and campaigns in plain language and get answers from live store data, read-only.",
+    "type": "magento-module",
+    "license": "proprietary",
+    "authors": [{ "name": "YSRTech", "email": "dev@ysrtech.com" }],
+    "require": {
+        "php": ">=8.1",
+        "ext-json": "*",
+        "ext-curl": "*"
+    },
+    "suggest": {
+        "ysrtech/emailcampaigns": "Shares its AI key and model, and adds campaign results to what the assistant can answer"
+    },
+    "extra": {
+        "magento-root-dir": ".",
+        "modman": true
+    }
+}

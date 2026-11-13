@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<!-- STAGING ONLY. Never copy into a store: it replaces the AI provider with a script. -->
+<config>
+    <modules>
+        <YSRTech_AdminAssistantStandin>
+            <active>true</active>
+            <codePool>local</codePool>
+            <depends><YSRTech_AdminAssistant /></depends>
+        </YSRTech_AdminAssistantStandin>
+    </modules>
+</config>

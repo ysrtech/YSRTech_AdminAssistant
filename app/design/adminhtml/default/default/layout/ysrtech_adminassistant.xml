@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<layout>
+    <!-- The assistant on every admin page; the block draws nothing for
+         someone who may not see it. -->
+    <default>
+        <reference name="before_body_end">
+            <block type="ysrtech_adminassistant/adminhtml_panel" name="ysrtech_adminassistant.panel" />
+        </reference>
+    </default>
+
+    <adminhtml_ysrtech_assistantaudit_index>
+        <reference name="content">
+            <block type="ysrtech_adminassistant/adminhtml_audit" name="ysrtech_adminassistant.audit" />
+        </reference>
+    </adminhtml_ysrtech_assistantaudit_index>
+</layout>

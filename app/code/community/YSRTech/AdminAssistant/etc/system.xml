@@ -1,0 +1,195 @@
+<?xml version="1.0"?>
+<config>
+    <tabs>
+        <ysrtech translate="label" module="ysrtech_adminassistant">
+            <label>YSRTech</label>
+            <sort_order>300</sort_order>
+        </ysrtech>
+    </tabs>
+    <sections>
+        <ysrtech_adminassistant translate="label" module="ysrtech_adminassistant">
+            <label>AI Assistant</label>
+            <tab>ysrtech</tab>
+            <sort_order>110</sort_order>
+            <show_in_default>1</show_in_default>
+            <groups>
+                <general translate="label comment">
+                    <label>Privacy and Switch</label>
+                    <comment><![CDATA[
+<div class="ysraa-privacy">
+<p><strong>What this sends to the AI provider.</strong> The assistant answers from live store data, so the question typed, the page it was asked on, and whatever the assistant looks up to answer it are sent to the provider below: order details and addresses, customer names, email addresses and order histories, product and stock figures, sales totals, campaign results, log lines and, when the report query is on, rows from the allowed tables.</p>
+<p><strong>What is never sent.</strong> Payment details, password hashes and reset tokens, API keys and other secret settings, and admin user records. These are removed before anything leaves the store, and the report query cannot read the tables that hold them.</p>
+<p><strong>Before turning it on</strong>, read the provider's data terms (whether requests are kept, for how long, and whether they are used for training) and record the decision. Quebec's Law 25 applies to personal information sent outside Quebec; a privacy impact assessment may be required. Email Campaigns' own AI setting promises that no customer data is sent; that promise is unchanged, and this switch is separate from it.</p>
+</div>]]></comment>
+                    <sort_order>10</sort_order>
+                    <show_in_default>1</show_in_default>
+                    <fields>
+                        <enabled translate="label comment">
+                            <label>Enable the AI Assistant</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <comment>Off by default. While off, nothing is sent anywhere and only people who can change this setting see the assistant button.</comment>
+                            <sort_order>10</sort_order>
+                            <show_in_default>1</show_in_default>
+                        </enabled>
+                    </fields>
+                </general>
+
+                <connection translate="label comment">
+                    <label>AI Connection</label>
+                    <comment>Each question is billed by the provider to the key used. Set a spending limit on the key at the provider.</comment>
+                    <sort_order>20</sort_order>
+                    <show_in_default>1</show_in_default>
+                    <fields>
+                        <source translate="label comment">
+                            <label>Key and Model</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>ysrtech_adminassistant/system_config_source_connection</source_model>
+                            <comment>Email Campaigns' settings are used only when that module is installed and has a key and a model saved; otherwise the fields below are.</comment>
+                            <sort_order>10</sort_order>
+                            <show_in_default>1</show_in_default>
+                        </source>
+                        <provider translate="label">
+                            <label>Provider</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>ysrtech_adminassistant/system_config_source_provider</source_model>
+                            <sort_order>20</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <depends><source>own</source></depends>
+                        </provider>
+                        <api_key translate="label comment">
+                            <label>API Key</label>
+                            <frontend_type>obscure</frontend_type>
+                            <backend_model>adminhtml/system_config_backend_encrypted</backend_model>
+                            <comment>Stored encrypted.</comment>
+                            <sort_order>30</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <depends><source>own</source></depends>
+                        </api_key>
+                        <model translate="label comment">
+                            <label>Model</label>
+                            <frontend_type>text</frontend_type>
+                            <comment><![CDATA[The model must support tool calling. On OpenRouter the id has the form <em>company/model-name</em>; on OpenAI it is the model name alone.]]></comment>
+                            <sort_order>40</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <depends><source>own</source></depends>
+                        </model>
+                        <max_calls_per_hour translate="label comment">
+                            <label>Maximum Model Requests Per Hour</label>
+                            <frontend_type>text</frontend_type>
+                            <validate>validate-digits validate-greater-than-zero</validate>
+                            <comment>Across every admin user. One question can take several requests when the assistant looks several things up.</comment>
+                            <sort_order>50</sort_order>
+                            <show_in_default>1</show_in_default>
+                        </max_calls_per_hour>
+                        <test translate="label comment">
+                            <label>Connection</label>
+                            <frontend_type>button</frontend_type>
+                            <frontend_model>ysrtech_adminassistant/adminhtml_system_config_test</frontend_model>
+                            <comment>Sends a one-word request, with no store data, using the saved settings. Save first.</comment>
+                            <sort_order>60</sort_order>
+                            <show_in_default>1</show_in_default>
+                        </test>
+                    </fields>
+                </connection>
+
+                <behaviour translate="label">
+                    <label>Behaviour</label>
+                    <sort_order>30</sort_order>
+                    <show_in_default>1</show_in_default>
+                    <fields>
+                        <max_rounds translate="label comment">
+                            <label>Maximum Look-ups Per Question</label>
+                            <frontend_type>text</frontend_type>
+                            <validate>validate-digits validate-greater-than-zero</validate>
+                            <comment>How many rounds of tool calls one question may take before the assistant has to answer with what it has.</comment>
+                            <sort_order>10</sort_order>
+                            <show_in_default>1</show_in_default>
+                        </max_rounds>
+                        <history_days translate="label comment">
+                            <label>Keep Conversations and Audit Log (days)</label>
+                            <frontend_type>text</frontend_type>
+                            <validate>validate-digits validate-greater-than-zero</validate>
+                            <comment>Older conversations and audit lines are deleted by the daily cleanup.</comment>
+                            <sort_order>20</sort_order>
+                            <show_in_default>1</show_in_default>
+                        </history_days>
+                    </fields>
+                </behaviour>
+
+                <report translate="label comment">
+                    <label>Report Query (read-only SQL)</label>
+                    <comment><![CDATA[Lets the assistant answer questions no other tool covers by writing a SELECT over an allowed list of tables. It runs as a separate database user that can only read those tables: create it with the statements below, then enter it here. The assistant refuses to use a user that can change anything.]]></comment>
+                    <sort_order>40</sort_order>
+                    <show_in_default>1</show_in_default>
+                    <fields>
+                        <enabled translate="label">
+                            <label>Enable Report Query</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>10</sort_order>
+                            <show_in_default>1</show_in_default>
+                        </enabled>
+                        <grants translate="label">
+                            <label>Database User to Create</label>
+                            <frontend_type>label</frontend_type>
+                            <frontend_model>ysrtech_adminassistant/adminhtml_system_config_grants</frontend_model>
+                            <sort_order>15</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <depends><enabled>1</enabled></depends>
+                        </grants>
+                        <host translate="label comment">
+                            <label>Database Host</label>
+                            <frontend_type>text</frontend_type>
+                            <comment>Empty uses the store's own database host. A read replica can be named here.</comment>
+                            <sort_order>20</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <depends><enabled>1</enabled></depends>
+                        </host>
+                        <username translate="label">
+                            <label>Read-only Username</label>
+                            <frontend_type>text</frontend_type>
+                            <sort_order>30</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <depends><enabled>1</enabled></depends>
+                        </username>
+                        <password translate="label comment">
+                            <label>Read-only Password</label>
+                            <frontend_type>obscure</frontend_type>
+                            <backend_model>adminhtml/system_config_backend_encrypted</backend_model>
+                            <comment>Stored encrypted.</comment>
+                            <sort_order>40</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <depends><enabled>1</enabled></depends>
+                        </password>
+                        <row_cap translate="label">
+                            <label>Maximum Rows Returned</label>
+                            <frontend_type>text</frontend_type>
+                            <validate>validate-digits validate-greater-than-zero</validate>
+                            <sort_order>50</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <depends><enabled>1</enabled></depends>
+                        </row_cap>
+                        <time_limit translate="label">
+                            <label>Time Limit (seconds)</label>
+                            <frontend_type>text</frontend_type>
+                            <validate>validate-digits validate-greater-than-zero</validate>
+                            <sort_order>60</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <depends><enabled>1</enabled></depends>
+                        </time_limit>
+                        <check translate="label comment">
+                            <label>Check</label>
+                            <frontend_type>button</frontend_type>
+                            <frontend_model>ysrtech_adminassistant/adminhtml_system_config_reportcheck</frontend_model>
+                            <comment>Connects as the saved user and confirms it can read the allowed tables and change nothing. Save first.</comment>
+                            <sort_order>70</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <depends><enabled>1</enabled></depends>
+                        </check>
+                    </fields>
+                </report>
+            </groups>
+        </ysrtech_adminassistant>
+    </sections>
+</config>

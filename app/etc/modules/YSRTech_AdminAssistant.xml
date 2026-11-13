@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<config>
+    <modules>
+        <YSRTech_AdminAssistant>
+            <active>true</active>
+            <codePool>community</codePool>
+            <depends>
+                <Mage_Adminhtml />
+                <Mage_Sales />
+                <Mage_Customer />
+                <Mage_Catalog />
+            </depends>
+        </YSRTech_AdminAssistant>
+    </modules>
+</config>

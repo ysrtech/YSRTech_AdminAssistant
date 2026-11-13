@@ -1,0 +1,71 @@
+<?php
+/** @var YSRTech_AdminAssistant_Block_Adminhtml_Audit $this */
+$data = $this->data();
+$f    = $this->filters();
+$e    = function ($v) { return $this->escapeHtml((string) $v); };
+$t    = $data['totals'];
+$pages = max(1, (int) ceil($data['total'] / YSRTech_AdminAssistant_Block_Adminhtml_Audit::PER_PAGE));
+?>
+<link rel="stylesheet" href="<?php echo $e(Mage::getSingleton('core/layout')->createBlock('ysrtech_adminassistant/adminhtml_panel')->assetUrl('panel.css')) ?>" />
+<div class="ysraa-audit">
+    <div class="ysraa-audit-head">
+        <h1><?php echo $this->__('AI Assistant Audit Log') ?></h1>
+        <p><?php echo $this->__('Every question asked, by whom, and every look-up the assistant made to answer it, with its input and the rows it returned. Kept for the number of days set in the assistant\'s settings.') ?></p>
+    </div>
+    <div class="ysraa-stats">
+        <div><b><?php echo (int) $t['questions'] ?></b><span><?php echo $this->__('questions, last 30 days') ?></span></div>
+        <div><b><?php echo (int) $t['users'] ?></b><span><?php echo $this->__('people asking') ?></span></div>
+        <div><b><?php echo (int) $t['lookups'] ?></b><span><?php echo $this->__('look-ups') ?></span></div>
+        <div><b><?php echo (int) $t['calls'] ?></b><span><?php echo $this->__('AI requests') ?></span></div>
+        <div><b><?php echo $t['cost'] !== null ? '$' . number_format((float) $t['cost'], 2) : '—' ?></b><span><?php echo $this->__('provider cost reported') ?></span></div>
+    </div>
+    <form class="ysraa-filter" method="get" action="<?php echo $e($this->getUrl('*/*/index')) ?>">
+        <select name="user">
+            <option value=""><?php echo $this->__('Everyone') ?></option>
+            <?php foreach ($data['users'] as $u): ?>
+                <option value="<?php echo $e($u) ?>"<?php echo $u === $f['user'] ? ' selected' : '' ?>><?php echo $e($u) ?></option>
+            <?php endforeach ?>
+        </select>
+        <input type="search" name="q" value="<?php echo $e($f['q']) ?>" placeholder="<?php echo $this->__('Words in the question') ?>" />
+        <button type="submit" class="scalable"><span><span><span><?php echo $this->__('Filter') ?></span></span></span></button>
+        <span class="ysraa-count"><?php echo $this->__('%d questions', $data['total']) ?></span>
+    </form>
+
+    <?php if (!$data['questions']): ?>
+        <div class="ysraa-empty"><?php echo $this->__('Nothing has been asked yet.') ?></div>
+    <?php endif ?>
+
+    <?php foreach ($data['questions'] as $q): ?>
+        <article class="ysraa-entry">
+            <header>
+                <span class="who"><?php echo $e($q['username'] ?: '—') ?></span>
+                <span class="when"><?php echo $e($this->local($q['created_at'])) ?></span>
+                <span class="meta"><?php echo $this->__('%d look-ups · %d AI requests · %s tokens', count($q['tools']), $q['calls'], number_format($q['tokens'])) ?><?php if ($q['cost'] !== null): ?> · $<?php echo number_format((float) $q['cost'], 4) ?><?php endif ?><?php if ($q['failed']): ?> · <em class="bad"><?php echo $this->__('%d failed', $q['failed']) ?></em><?php endif ?></span>
+            </header>
+            <p class="question"><?php echo nl2br($e($q['question'])) ?></p>
+            <?php if ($q['tools']): ?>
+                <table class="ysraa-tools">
+                    <thead><tr><th><?php echo $this->__('Look-up') ?></th><th><?php echo $this->__('Input') ?></th><th><?php echo $this->__('Rows') ?></th><th><?php echo $this->__('Time') ?></th></tr></thead>
+                    <tbody>
+                    <?php foreach ($q['tools'] as $tool): ?>
+                        <tr class="<?php echo (int) $tool['ok'] ? '' : 'failed' ?>">
+                            <td><code><?php echo $e($tool['tool']) ?></code></td>
+                            <td><code class="input"><?php echo $e($tool['input']) ?></code><?php if (!(int) $tool['ok']): ?><div class="bad"><?php echo $e($tool['error']) ?></div><?php endif ?></td>
+                            <td><?php echo $tool['rows_returned'] !== null ? (int) $tool['rows_returned'] : '—' ?></td>
+                            <td><?php echo (int) $tool['duration_ms'] ?> ms</td>
+                        </tr>
+                    <?php endforeach ?>
+                    </tbody>
+                </table>
+            <?php endif ?>
+        </article>
+    <?php endforeach ?>
+
+    <?php if ($pages > 1): ?>
+        <nav class="ysraa-pages">
+            <?php for ($p = 1; $p <= $pages && $p <= 50; $p++): ?>
+                <a href="<?php echo $e($this->getUrl('*/*/index', array_filter(['user' => $f['user'], 'q' => $f['q'], 'p' => $p], 'strlen'))) ?>" class="<?php echo $p === $f['page'] ? 'on' : '' ?>"><?php echo $p ?></a>
+            <?php endfor ?>
+        </nav>
+    <?php endif ?>
+</div>

@@ -1,0 +1,187 @@
+<?xml version="1.0"?>
+<config>
+    <modules>
+        <YSRTech_AdminAssistant>
+            <version>0.1.0</version>
+        </YSRTech_AdminAssistant>
+    </modules>
+
+    <global>
+        <models>
+            <ysrtech_adminassistant>
+                <class>YSRTech_AdminAssistant_Model</class>
+                <resourceModel>ysrtech_adminassistant_resource</resourceModel>
+            </ysrtech_adminassistant>
+            <ysrtech_adminassistant_resource>
+                <class>YSRTech_AdminAssistant_Model_Resource</class>
+                <entities>
+                    <conversation>
+                        <table>ysrtech_adminassistant_conversation</table>
+                    </conversation>
+                    <message>
+                        <table>ysrtech_adminassistant_message</table>
+                    </message>
+                    <audit>
+                        <table>ysrtech_adminassistant_audit</table>
+                    </audit>
+                </entities>
+            </ysrtech_adminassistant_resource>
+        </models>
+
+        <blocks>
+            <ysrtech_adminassistant>
+                <class>YSRTech_AdminAssistant_Block</class>
+            </ysrtech_adminassistant>
+        </blocks>
+
+        <helpers>
+            <ysrtech_adminassistant>
+                <class>YSRTech_AdminAssistant_Helper</class>
+            </ysrtech_adminassistant>
+        </helpers>
+
+        <resources>
+            <ysrtech_adminassistant_setup>
+                <setup>
+                    <module>YSRTech_AdminAssistant</module>
+                </setup>
+            </ysrtech_adminassistant_setup>
+        </resources>
+    </global>
+
+    <admin>
+        <routers>
+            <adminhtml>
+                <args>
+                    <modules>
+                        <YSRTech_AdminAssistant before="Mage_Adminhtml">YSRTech_AdminAssistant_Adminhtml</YSRTech_AdminAssistant>
+                    </modules>
+                </args>
+            </adminhtml>
+        </routers>
+    </admin>
+
+    <adminhtml>
+        <layout>
+            <updates>
+                <ysrtech_adminassistant>
+                    <file>ysrtech_adminassistant.xml</file>
+                </ysrtech_adminassistant>
+            </updates>
+        </layout>
+
+        <menu>
+            <system>
+                <children>
+                    <ysrtech_adminassistant_audit translate="title" module="ysrtech_adminassistant">
+                        <title>AI Assistant Audit Log</title>
+                        <action>adminhtml/ysrtech_assistantaudit/index</action>
+                        <sort_order>95</sort_order>
+                    </ysrtech_adminassistant_audit>
+                </children>
+            </system>
+        </menu>
+
+        <!--
+            Every tool the assistant can call names one of the nodes under
+            "tools", and the chat only offers a person the tools their role
+            allows. A role with "AI Assistant" but none of its tools can open
+            the chat and get nothing from the store.
+        -->
+        <acl>
+            <resources>
+                <admin>
+                    <children>
+                        <ysrtech_adminassistant translate="title" module="ysrtech_adminassistant">
+                            <title>AI Assistant (use the chat)</title>
+                            <sort_order>76</sort_order>
+                            <children>
+                                <tools translate="title" module="ysrtech_adminassistant">
+                                    <title>What the assistant may look up</title>
+                                    <sort_order>10</sort_order>
+                                    <children>
+                                        <orders translate="title" module="ysrtech_adminassistant">
+                                            <title>Orders, shipments, invoices, credit memos</title>
+                                            <sort_order>10</sort_order>
+                                        </orders>
+                                        <customers translate="title" module="ysrtech_adminassistant">
+                                            <title>Customers</title>
+                                            <sort_order>20</sort_order>
+                                        </customers>
+                                        <catalog translate="title" module="ysrtech_adminassistant">
+                                            <title>Catalogue and stock</title>
+                                            <sort_order>30</sort_order>
+                                        </catalog>
+                                        <sales translate="title" module="ysrtech_adminassistant">
+                                            <title>Sales figures</title>
+                                            <sort_order>40</sort_order>
+                                        </sales>
+                                        <campaigns translate="title" module="ysrtech_adminassistant">
+                                            <title>Email Campaigns results</title>
+                                            <sort_order>50</sort_order>
+                                        </campaigns>
+                                        <store translate="title" module="ysrtech_adminassistant">
+                                            <title>Store settings, cron and logs</title>
+                                            <sort_order>60</sort_order>
+                                        </store>
+                                        <report translate="title" module="ysrtech_adminassistant">
+                                            <title>Report query (read-only SQL)</title>
+                                            <sort_order>70</sort_order>
+                                        </report>
+                                    </children>
+                                </tools>
+                            </children>
+                        </ysrtech_adminassistant>
+                        <system>
+                            <children>
+                                <ysrtech_adminassistant_audit translate="title" module="ysrtech_adminassistant">
+                                    <title>AI Assistant Audit Log</title>
+                                    <sort_order>95</sort_order>
+                                </ysrtech_adminassistant_audit>
+                                <config>
+                                    <children>
+                                        <ysrtech_adminassistant translate="title" module="ysrtech_adminassistant">
+                                            <title>YSRTech AI Assistant</title>
+                                        </ysrtech_adminassistant>
+                                    </children>
+                                </config>
+                            </children>
+                        </system>
+                    </children>
+                </admin>
+            </resources>
+        </acl>
+    </adminhtml>
+
+    <crontab>
+        <jobs>
+            <ysrtech_adminassistant_cleanup>
+                <schedule><cron_expr>17 3 * * *</cron_expr></schedule>
+                <run><model>ysrtech_adminassistant/audit::cleanup</model></run>
+            </ysrtech_adminassistant_cleanup>
+        </jobs>
+    </crontab>
+
+    <default>
+        <ysrtech_adminassistant>
+            <general>
+                <!-- Off until the owner has read what is sent and turned it on -->
+                <enabled>0</enabled>
+            </general>
+            <connection>
+                <source>emailcampaigns</source>
+                <provider>openrouter</provider>
+                <max_calls_per_hour>200</max_calls_per_hour>
+            </connection>
+            <behaviour>
+                <max_rounds>8</max_rounds>
+                <history_days>90</history_days>
+            </behaviour>
+            <report>
+                <enabled>0</enabled>
+                <row_cap>200</row_cap>
+                <time_limit>5</time_limit>
+            </report>
+        </ysrtech_adminassistant>
+    </default>
+</config>
