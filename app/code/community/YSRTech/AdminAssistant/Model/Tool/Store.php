@@ -128,7 +128,7 @@ class YSRTech_AdminAssistant_Model_Tool_Store extends YSRTech_AdminAssistant_Mod
             }
 
             return ['rows' => count($shown), 'data' => [
-                'note'         => 'Settings saved in the database under this path. A setting never saved uses the module\'s default, which is not listed; ask for its exact path to see it.',
+                'about'         => 'Settings saved in the database under this path. A setting never saved uses the module\'s default, which is not listed; ask for its exact path to see it.',
                 'settings'     => $shown,
                 'withheld'     => array_values(array_unique($hidden)),
                 'withheld_why' => $hidden ? 'secret settings are never shown' : null,

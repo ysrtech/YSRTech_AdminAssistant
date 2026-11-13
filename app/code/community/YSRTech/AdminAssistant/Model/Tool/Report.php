@@ -40,8 +40,8 @@ class YSRTech_AdminAssistant_Model_Tool_Report extends YSRTech_AdminAssistant_Mo
             $result = Mage::getSingleton('ysrtech_adminassistant/report_query')->run((string) ($args['sql'] ?? ''));
 
             return ['rows' => count($result['rows']), 'data' => $result + [
-                'timezone_note' => 'Datetime columns are UTC; the store\'s timezone is ' . self::timezone()->getName() . '.',
-                'note'          => $result['truncated'] ? 'More rows matched than are shown; say so, or aggregate in SQL.' : null,
+                'timezone'      => 'Datetime columns are UTC; the store\'s timezone is ' . self::timezone()->getName() . '.',
+                'about'          => $result['truncated'] ? 'More rows matched than are shown; say so, or aggregate in SQL.' : null,
             ]];
         }
 

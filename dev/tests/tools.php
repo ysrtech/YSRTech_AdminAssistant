@@ -135,6 +135,30 @@ $check('segments', $ok, $raw);
 [$ok, $d, $raw] = $run('list_growth', ['period' => 'last_90_days', 'group_by' => 'month']);
 $check('list growth', $ok && isset($d['now']), $raw);
 
+echo "\nEmail tracking\n";
+$db = Mage::getSingleton('core/resource')->getConnection('core_read');
+$busy = (string) $db->fetchOne("SELECT email FROM ysrtech_emailcampaigns_queue GROUP BY email ORDER BY COUNT(*) DESC LIMIT 1");
+[$ok, $d, $raw] = $run('email_activity', ['email' => $busy, 'limit' => 5]);
+$all .= $raw;
+$check('one address: every message with delivered, opened, clicked', $ok && $d['totals']['messages'] >= 2 && count($d['messages']) >= 2 && isset($d['messages'][0]['opened'], $d['messages'][0]['clicked']), $raw);
+$check('with newsletter and suppression status', $ok && isset($d['newsletter'], $d['suppressed']), $raw);
+$check('the tracking token is never in it', stripos($raw, 'tracking_token') === false && stripos($raw, 'token') === false);
+$supp = $db->fetchRow("SELECT email, reason FROM ysrtech_emailcampaigns_suppression WHERE reason = 'manual' LIMIT 1");
+if ($supp) {
+    [$ok, $d, $raw] = $run('email_activity', ['email' => $supp['email']]);
+    $check('a suppressed address says why, with staff notes quoted', $ok && is_array($d['suppressed']) && stripos($d['suppressed']['why'], 'by hand') !== false, $raw);
+}
+[$ok, $d, $raw] = $run('campaign_recipients', ['filter' => 'clicked', 'limit' => 5]);
+$all .= $raw;
+$check('who clicked the latest campaign, with a total', $ok && $d['matched'] >= 1 && count($d['recipients']) <= 5 && strpos($d['recipients'][0]['clicked'] ?? 'no', 'click') !== false, $raw);
+[$ok, $d, $raw] = $run('campaign_recipients', ['filter' => 'failed', 'limit' => 1]);
+$check('failed sends carry the provider\'s error, quoted', $ok && ($d['matched'] === 0 || isset($d['recipients'][0]['send_error']['untrusted_text'])), $raw);
+[$ok, $d, $raw] = $run('automation_results', ['period' => 'all_time']);
+$check('automations with sends, opens and clicks', $ok && count($d['automations']) >= 1 && array_key_exists('open_rate', $d['automations'][0]), $raw);
+[$ok, $d, $raw] = $run('automation_results', ['automation_id' => (int) $d['automations'][0]['automation_id'], 'period' => 'all_time']);
+$check('one automation by step', $ok && isset($d['automations'][0]['steps']), $raw);
+$check('the tools\' own explanations are not marked as untrusted', strpos($raw, '"about":"') !== false, $raw);
+
 echo "\nStore\n";
 [$ok, $d, $raw] = $run('cron_status');
 $all .= $raw;

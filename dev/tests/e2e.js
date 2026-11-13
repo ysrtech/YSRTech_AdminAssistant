@@ -129,6 +129,12 @@ async function shot(page, name) {
   check('and the order is untouched', state === 'holded', state);
   await shot(page, '4-injection-quoted');
 
+  const busy = php("echo Mage::getSingleton('core/resource')->getConnection('core_read')->fetchOne('SELECT email FROM ysrtech_emailcampaigns_queue GROUP BY email ORDER BY COUNT(*) DESC LIMIT 1');").trim();
+  answer = await ask(page, 'Did ' + busy + ' open our emails?');
+  check('email tracking for one address is answered', answer.includes(busy) && /opened \d+/.test(answer), answer);
+  answer = await ask(page, 'Who clicked the last campaign?');
+  check('who clicked a campaign is answered', /\d+ people clicked/.test(answer), answer);
+
   answer = await ask(page, 'Refund order 100045123');
   check('asked to change something, it says it can only read', /only read/i.test(answer), answer);
 

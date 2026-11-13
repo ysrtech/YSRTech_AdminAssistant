@@ -30,7 +30,7 @@ server is involved.
 | Customers | search, details (lifetime value, orders, group, newsletter), top customers by revenue or orders, groups | Customers |
 | Catalogue | product search, product details with sales, low stock, best sellers, categories | Catalogue and stock |
 | Sales | revenue, net revenue, orders, AOV and more for any period, broken down by day, week, month, store, status, payment method, country and so on; one period against another | Sales figures |
-| Email Campaigns (only when that module is installed) | campaign list and results with credited revenue, the 7/14/30-day email overview, segments, list growth | Email Campaigns results |
+| Email Campaigns (only when that module is installed) | campaign list and results with credited revenue, the 7/14/30-day email overview, segments, list growth; email tracking for one address (every message: delivered, real opens, clicks, links clicked, bounces, complaints, suppression and why); a campaign's recipients by what they did (opened, clicked, didn't open, bounced, complained, failed); automation results by automation or step | Email Campaigns results |
 | Store | setting values (secrets excluded), cron status, recent `system.log` / `exception.log` entries, store overview | Store settings, cron and logs |
 | Report query | read-only SQL over an allowed list of tables, for anything else | Report query |
 

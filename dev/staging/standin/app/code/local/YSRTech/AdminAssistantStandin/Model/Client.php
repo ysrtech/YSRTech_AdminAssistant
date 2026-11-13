@@ -76,6 +76,18 @@ class YSRTech_AdminAssistantStandin_Model_Client extends YSRTech_AdminAssistant_
             return ['low_stock', ['threshold' => 5]];
         }
 
+        if (preg_match('/([a-z0-9._%+-]+@[a-z0-9.-]+)/', $q, $m) && preg_match('/email|open|click|track/', $q)) {
+            return ['email_activity', ['email' => $m[1]]];
+        }
+
+        if (preg_match('/who (opened|clicked)/', $q, $m)) {
+            return ['campaign_recipients', ['filter' => $m[1]]];
+        }
+
+        if (strpos($q, 'automation') !== false) {
+            return ['automation_results', ['period' => 'last_30_days']];
+        }
+
         if (strpos($q, 'campaign') !== false) {
             return ['campaign_results', []];
         }
@@ -136,6 +148,17 @@ class YSRTech_AdminAssistantStandin_Model_Client extends YSRTech_AdminAssistant_
             case 'low_stock':
                 $rows = array_map(static fn ($p) => "| {$p['sku']} | {$p['name']} | {$p['qty']} |", $data['products']);
                 return "{$data['matched']} products are at or below 5 in stock:\n\n| SKU | Product | Qty |\n|---|---|---|\n" . implode("\n", $rows);
+
+            case 'email_activity':
+                $t = $data['totals'];
+                $rows = array_map(static fn ($m) => "| {$m['email_was']} | {$m['sent']} | {$m['opened']} | {$m['clicked']} |", $data['messages']);
+                return "**{$data['email']}** got {$t['sent']} emails: opened {$t['opened']}, clicked {$t['clicked']}, bounced {$t['bounced']}. Suppressed: " . (is_array($data['suppressed']) ? $data['suppressed']['why'] : 'no') . ".\n\n| Email | Sent | Opened | Clicked |\n|---|---|---|---|\n" . implode("\n", $rows);
+
+            case 'campaign_recipients':
+                return "{$data['matched']} people {$data['filter']} **{$data['campaign']}**.";
+
+            case 'automation_results':
+                return implode("\n", array_map(static fn ($a) => "- **{$a['name']}**: {$a['sent']} sent, open rate {$a['open_rate']}, click rate {$a['click_rate']}", $data['automations']));
 
             case 'campaign_results':
                 $r = $data['results'];
