@@ -84,8 +84,9 @@ async function shot(page, name) {
 
   console.log('An administrator');
   const page = await login(browser, 'admin', 'StagingAdmin12345');
-  check('the button is in the admin header', await page.$eval('.ysraa-launch', (b) => !!b.closest('.header-right')));
-  await page.click('.ysraa-launch');
+  check('the trigger is in the header where the search box was', await page.$eval('.ysraa-trigger', (t) => !!t.closest('.header-right') && t.parentNode.contains(document.getElementById('global_search'))));
+  check('and the search box is gone from view', !(await page.isVisible('#global_search')));
+  await page.click('.ysraa-trigger-open');
   check('the drawer opens with suggestions', await page.isVisible('.ysraa-drawer') && (await page.$$('.ysraa-suggest .ysraa-chip')).length >= 3);
   await shot(page, '1-welcome');
 
@@ -151,7 +152,9 @@ async function shot(page, name) {
 
   console.log('\nA role with orders only');
   const limited = await login(browser, 'aa_limited', 'Limited12345');
-  await limited.click('.ysraa-launch');
+  await limited.keyboard.press('Control+K');
+  check('Ctrl+K jumps to the header field', await limited.evaluate(() => document.activeElement && document.activeElement.closest('.ysraa-trigger') !== null));
+  await limited.click('.ysraa-trigger-open');
   answer = await ask(limited, 'Top 10 customers this year');
   check('asking about customers: the role does not include it', /role does not include/i.test(answer), answer);
   answer = await ask(limited, 'What\'s wrong with order 100045123?');
@@ -166,12 +169,13 @@ async function shot(page, name) {
   await page.goto(BASE + '/admin/dashboard/');
   await page.waitForSelector('.ysraa-drawer');
   if (await page.isVisible('.ysraa-drawer')) { await page.click('.ysraa-head [data-close]'); }
-  await page.click('.ysraa-launch');
+  await page.click('.ysraa-trigger-open');
   check('the administrator sees why it is off and a link to the settings', (await page.innerText('.ysraa-off')).includes('switched off') && !!(await page.$('.ysraa-welcome a[href*="ysrtech_adminassistant"]')));
   check('and cannot type a question', await page.isDisabled('.ysraa-box textarea'));
+  check('while off, the search box stays, with only the icon beside it', await page.isVisible('#global_search') && await page.isVisible('.ysraa-trigger.compact .ysraa-trigger-open'));
   await shot(page, '6-switched-off');
   await limited.goto(BASE + '/admin/dashboard/');
-  check('staff without the settings permission see no button at all', !(await limited.$('.ysraa-launch')));
+  check('staff without the settings permission get no trigger; the header is left as the theme drew it', !(await limited.$('.ysraa-trigger')) && ((await limited.$('#global_search')) === null || await limited.isVisible('#global_search')));
   const res = await limited.evaluate(async () => {
     const cfg = document.getElementById('ysraa-config');
     return cfg ? 'panel present' : 'no panel';

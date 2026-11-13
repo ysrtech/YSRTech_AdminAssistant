@@ -1,7 +1,7 @@
 /* AI Assistant: the header button, the drawer, and the audit log page.
    The look follows Email Campaigns' admin pages; everything is scoped to
    .ysraa* so the admin theme around it is untouched. */
-.ysraa, .ysraa-launch, .ysraa-audit {
+.ysraa, .ysraa-trigger, .ysraa-audit {
   --bg: #fafafa; --surface: #fff; --surface-2: #f4f4f5; --border: #e4e4e7; --border-strong: #d4d4d8;
   --text: #18181b; --text-2: #52525b; --text-3: #8a8a93;
   --accent: #5b5bf7; --accent-hover: #4a4ae8; --accent-soft: #eeeefe; --accent-text: #4343d6;
@@ -16,14 +16,22 @@
   -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 1l2.6 7.4L22 11l-7.4 2.6L12 21l-2.6-7.4L2 11l7.4-2.6z'/%3E%3C/svg%3E") center / contain no-repeat;
           mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 1l2.6 7.4L22 11l-7.4 2.6L12 21l-2.6-7.4L2 11l7.4-2.6z'/%3E%3C/svg%3E") center / contain no-repeat; }
 
-/* ---------- header button ---------- */
-.ysraa-launch { display: inline-flex; align-items: center; gap: 7px; height: 30px; padding: 0 12px; margin: 0 10px 6px 0; vertical-align: middle;
-  border: 1px solid var(--border-strong); border-radius: 99px; background: var(--surface); color: var(--text); font-size: 12.5px; font-weight: 600; cursor: pointer;
-  box-shadow: 0 1px 2px rgba(24, 24, 27, .06); float: right; }
-.ysraa-launch:hover { border-color: var(--accent); color: var(--accent-text); }
-.ysraa-launch.floating { position: fixed; right: 20px; bottom: 20px; z-index: 9998; height: 42px; padding: 0 16px; float: none; box-shadow: 0 8px 24px rgba(24, 24, 27, .18); }
-html.ysraa-open .ysraa-launch { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-text); }
-[dir="rtl"] .ysraa-launch, .rtl .ysraa-launch { float: left; margin: 0 0 6px 10px; }
+/* ---------- the trigger, where the header's search box was ---------- */
+.ysraa-trigger-slot { border: 0; margin: 0; padding: 0; min-width: 0; }
+.ysraa-trigger { display: flex; align-items: center; gap: 6px; width: 300px; max-width: 40vw; height: 32px; margin: 0; padding: 0 6px 0 4px;
+  border: 1px solid transparent; border-radius: 8px; background: #fff; box-shadow: 0 1px 2px rgba(24, 24, 27, .08); }
+.ysraa-trigger:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(91, 91, 247, .25); }
+.ysraa-trigger-open { flex: none; display: grid; place-items: center; width: 26px; height: 26px; padding: 0; border: 0; border-radius: 6px; background: none; cursor: pointer; }
+.ysraa-trigger-open:hover, html.ysraa-open .ysraa-trigger-open { background: var(--accent-soft); }
+.ysraa-trigger input { flex: 1; min-width: 0; height: 30px; padding: 0 !important; border: 0 !important; outline: 0; background: none !important; box-shadow: none !important;
+  font: inherit; font-size: 13px; color: var(--text); width: auto !important; }
+.ysraa-trigger input::placeholder { color: var(--text-3); }
+.ysraa-trigger kbd { flex: none; padding: 1px 6px; border: 1px solid var(--border); border-radius: 5px; background: var(--surface-2); font-family: inherit; font-size: 11px; line-height: 1.5; color: var(--text-3); }
+.ysraa-trigger:focus-within kbd { display: none; }
+.ysraa-trigger.compact { display: inline-flex; width: auto; padding: 0 2px; margin-left: 6px; vertical-align: middle; }
+.ysraa-trigger.compact input, .ysraa-trigger.compact kbd { display: none; }
+.ysraa-trigger-beside { display: flex; align-items: center; }
+.ysraa-trigger.floating { position: fixed; right: 20px; bottom: 20px; z-index: 9998; height: 42px; box-shadow: 0 8px 24px rgba(24, 24, 27, .18); }
 
 /* ---------- drawer ---------- */
 .ysraa-backdrop { display: none; }

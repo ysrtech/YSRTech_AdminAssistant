@@ -8,7 +8,12 @@ it cannot change anything.**
 
 ## How it works
 
-The **AI Assistant** button in the admin header opens a side drawer. A
+The header's search box is replaced by the assistant's field. Type a question
+and press Enter to open the side drawer and ask it, press the ✦ icon to open
+the drawer, or press Ctrl/⌘ K to jump to the field. (While the assistant is
+switched off, the search box stays, and only the icon is added beside it for
+those who can turn it on. Anyone who can't see the assistant keeps the
+search box.) A
 question goes to the AI provider along with the list of look-ups (tools) the
 person asking is allowed to use. The model asks for look-ups, the store runs
 them with that admin's permissions, the results go back, and the answer
