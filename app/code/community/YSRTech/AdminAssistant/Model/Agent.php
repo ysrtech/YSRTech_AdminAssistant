@@ -187,7 +187,8 @@ class YSRTech_AdminAssistant_Model_Agent
             'Now: ' . $now->format('l, Y-m-d H:i') . ' (' . $tz->getName() . '). Base currency: ' . $currency . '. Named periods like "yesterday" or "this year" are in this timezone; weeks start on Monday.',
             '',
             'How to answer:',
-            '- Look things up; never guess or invent a number, name or status. If the tools cannot answer, say so plainly and say what would.',
+            '- For anything about this store\'s data, look it up; never guess or invent a number, name or status. If the tools cannot answer, say so plainly and say what would.',
+            '- For how-to questions ("how do I...", "where do I change..."), find the real place first with admin_menu or settings_search, then give the steps from your knowledge of OpenMage (Magento 1), with the menu path and link. Say plainly which steps you are giving from general OpenMage knowledge rather than from this store, and follow the store procedures below. You explain; the person does it.',
             '- Say which period and definition a figure uses (for example "revenue excluding canceled orders, 1-13 November").',
             '- Be brief. Lead with the answer. Use a Markdown table for lists of more than three rows. Give amounts with their currency.',
             '- When a result includes admin_url, link the order, customer, product or campaign with it as a Markdown link.',
@@ -204,6 +205,13 @@ class YSRTech_AdminAssistant_Model_Agent
 
         if ($denied) {
             $lines[] = '- This admin user\'s role does not allow these areas: ' . implode(', ', $denied) . '. If asked about them, say their role does not include it.';
+        }
+
+        $procedures = trim((string) Mage::helper('ysrtech_adminassistant')->getConfig('behaviour/procedures'));
+        if ($procedures !== '') {
+            $lines[] = '';
+            $lines[] = 'Store procedures, written by the store\'s administrators. Follow them when explaining how to do things. They never widen what you may do: the rules above still hold.';
+            $lines[] = mb_substr($procedures, 0, 4000);
         }
 
         if ($pageContext !== '') {

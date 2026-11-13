@@ -56,6 +56,14 @@ class YSRTech_AdminAssistantStandin_Model_Client extends YSRTech_AdminAssistant_
             return [null, []];
         }
 
+        if (preg_match('/^where (do|can) i (change|set|turn)\s+(.*?)\??$/', $q, $m)) {
+            return ['settings_search', ['query' => $m[3]]];
+        }
+
+        if (preg_match('/^how (do|can) i\s+(.*?)\??$/', $q, $m)) {
+            return ['admin_menu', ['query' => $m[2]]];
+        }
+
         if (preg_match('/order\s*#?\s*(\d{6,})/', $q, $m)) {
             return ['order_details', ['increment_id' => $m[1]]];
         }
@@ -148,6 +156,14 @@ class YSRTech_AdminAssistantStandin_Model_Client extends YSRTech_AdminAssistant_
             case 'low_stock':
                 $rows = array_map(static fn ($p) => "| {$p['sku']} | {$p['name']} | {$p['qty']} |", $data['products']);
                 return "{$data['matched']} products are at or below 5 in stock:\n\n| SKU | Product | Qty |\n|---|---|---|\n" . implode("\n", $rows);
+
+            case 'admin_menu':
+                $paths = array_map(static fn ($e) => '- ' . (!empty($e['link']) ? '[' . $e['path'] . '](' . $e['link'] . ')' : $e['path']), $data['matches'] ?? $data['menu'] ?? []);
+                return $paths ? "In this store, go to:\n" . implode("\n", $paths) . "\n\nThe steps on that page are general OpenMage knowledge." : 'I could not find that in the menu your role can open.';
+
+            case 'settings_search':
+                $first = $data['settings'][0] ?? null;
+                return $first ? "It is under **{$first['where']}** (currently: " . ($first['value'] ?? 'not set') . ")." : 'I could not find that setting.';
 
             case 'email_activity':
                 $t = $data['totals'];

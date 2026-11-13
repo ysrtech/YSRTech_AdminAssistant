@@ -260,6 +260,26 @@ class YSRTech_AdminAssistant_Model_Report_Query
             $lines[] = ['level' => 'warn', 'text' => 'The user can read every table in the database. The assistant still keeps to its allowed list, but granting SELECT table by table (the statements above) puts the database itself in charge of that too.'];
         }
 
+        // Every chosen table, read as this user: a table chosen after the user
+        // was created needs its own GRANT
+        $tables     = Mage::getSingleton('ysrtech_adminassistant/report_guard')->allowedTables();
+        $unreadable = [];
+        foreach ($tables as $table) {
+            try {
+                $this->connection()->fetchOne('SELECT 1 FROM `' . str_replace('`', '', $table) . '` LIMIT 0');
+            } catch (Throwable $e) {
+                $unreadable[] = $table;
+            }
+        }
+
+        if (!$tables) {
+            $lines[] = ['level' => 'warn', 'text' => 'No tables are chosen, so the report query can read nothing.'];
+        } elseif ($unreadable) {
+            $lines[] = ['level' => 'warn', 'text' => sprintf('%d of the %d chosen tables cannot be read by this user yet: %s. Run the statements above again as a database administrator.', count($unreadable), count($tables), implode(', ', array_slice($unreadable, 0, 12)) . (count($unreadable) > 12 ? ', …' : ''))];
+        } else {
+            $lines[] = ['level' => 'ok', 'text' => sprintf('It can read all %d chosen tables.', count($tables))];
+        }
+
         try {
             $this->run('SELECT COUNT(*) AS orders FROM ' . Mage::getSingleton('core/resource')->getTableName('sales/order'));
             $lines[] = ['level' => 'ok', 'text' => 'A test query on the orders table ran.'];

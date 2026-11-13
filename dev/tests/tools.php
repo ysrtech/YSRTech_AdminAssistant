@@ -181,6 +181,28 @@ Mage::getModel('core/config')->deleteConfig('ysrtech_adminassistant/connection/a
 [$ok, $d, $raw] = $run('store_overview');
 $check('store overview', $ok && count($d['stores']) >= 1, $raw);
 
+echo "\nHow-to help\n";
+$help = Mage::getSingleton('ysrtech_adminassistant/tool_help')->setAclCheck(static fn () => true);
+[$ok, $d, $raw] = $run('admin_menu', ['query' => 'create a coupon']);
+$check('"coupon" finds Shopping Cart Price Rules', $ok && strpos($raw, 'Promotions > Shopping Cart Price Rules') !== false, $raw);
+[$ok, $d, $raw] = $run('admin_menu', ['query' => 'refund']);
+$check('"refund" finds Credit Memos', $ok && strpos($raw, 'Sales > Credit Memos') !== false, $raw);
+[$ok, $d, $raw] = $run('admin_menu', ['query' => 'campaign templates']);
+$check('add-on modules\' menus are included', $ok && strpos($raw, 'Email Campaigns > Templates') !== false, $raw);
+[$ok, $d, $raw] = $run('admin_menu');
+$check('without a query, the top of the menu', $ok && count($d['menu']) > 10, $raw);
+[$ok, $d, $raw] = $run('settings_search', ['query' => 'order email sender']);
+$check('a setting is found with its full path and value', $ok && strpos($raw, 'Sales Emails > Order > New Order Confirmation Email Sender') !== false && strpos($raw, 'sales_email/order/identity') !== false, $raw);
+[$ok, $d, $raw] = $run('settings_search', ['query' => 'mailgun api key']);
+$all .= $raw;
+$check('a secret setting is found but its value withheld', $ok && strpos($raw, '(secret; not shown)') !== false, $raw);
+$help->setAclCheck(static fn ($r) => strpos($r, 'admin/promo') === false && strpos($r, 'admin/system/config/sales_email') === false);
+[$ok, $d, $raw] = $run('admin_menu', ['query' => 'coupon']);
+$check('a role without Promotions is not pointed there', $ok && strpos($raw, 'Price Rules') === false, $raw);
+[$ok, $d, $raw] = $run('settings_search', ['query' => 'order email sender']);
+$check('nor to settings sections it cannot open', $ok && strpos($raw, 'Sales Emails') === false, $raw);
+$help->setAclCheck(null);
+
 echo "\nNothing secret in anything above\n";
 $found = $leaks($all);
 $check('no card digits, tokens, hashes, protect codes or keys in ' . number_format(strlen($all)) . ' characters of results', !$found, 'found: ' . implode(', ', $found));

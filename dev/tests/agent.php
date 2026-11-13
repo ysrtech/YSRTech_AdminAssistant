@@ -88,6 +88,15 @@ $p->feed(": OPENROUTER PROCESSING\n\ndata: {\"error\":{\"message\":\"overloaded\
 $p->finish();
 $check('an error in the stream is caught', $p->error() === 'overloaded');
 
+echo "\nHow-to questions and store procedures\n";
+$config->saveConfig('ysrtech_adminassistant/behaviour/procedures', 'Refunds over $200 need the owner\'s approval first.');
+Mage::getConfig()->reinit();
+$prompt = Mage::getModel('ysrtech_adminassistant/agent')->setTools(Mage::getModel('ysrtech_adminassistant/tools')->setAclCheck(static fn () => true))->systemPrompt();
+$check('the prompt says how to answer how-to questions', stripos($prompt, 'how-to questions') !== false && stripos($prompt, 'settings_search') !== false);
+$check('the store procedures are in the prompt, below the rules', strpos($prompt, 'Refunds over $200') > strpos($prompt, 'You can only read'));
+$config->deleteConfig('ysrtech_adminassistant/behaviour/procedures');
+Mage::getConfig()->reinit();
+
 echo "\nThe privacy switch\n";
 $set('general/enabled', 0);
 $requests = [];

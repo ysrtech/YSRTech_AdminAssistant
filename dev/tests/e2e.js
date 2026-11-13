@@ -135,6 +135,11 @@ async function shot(page, name) {
   answer = await ask(page, 'Who clicked the last campaign?');
   check('who clicked a campaign is answered', /\d+ people clicked/.test(answer), answer);
 
+  answer = await ask(page, 'How do I create a coupon code?');
+  check('a how-to question points to the real menu page, linked', /Shopping Cart Price Rules/.test(answer) && !!(await (await lastAnswer(page)).$('a[href*="promo_quote"]')), answer);
+  answer = await ask(page, 'Where do I change the order email sender?');
+  check('a where-is-the-setting question finds it', /Sales Emails > Order > New Order Confirmation Email Sender/.test(answer), answer);
+
   answer = await ask(page, 'Refund order 100045123');
   check('asked to change something, it says it can only read', /only read/i.test(answer), answer);
 
@@ -164,6 +169,29 @@ async function shot(page, name) {
   const outs = await page.$$eval('div[id^="ysraa_"][id$="_out"]', (o) => o.map((x) => x.textContent));
   check('Test Connection answers (stand-in)', outs.some((t) => /answered with model staging\/standin/.test(t)), outs.join(' / '));
   check('Check Database User confirms read-only', outs.some((t) => /can read and nothing more/.test(t)), outs.join(' / '));
+  check('and that it can read every chosen table', outs.some((t) => /can read all \d+ chosen tables/.test(t)), outs.join(' / '));
+  await page.selectOption('#ysrtech_adminassistant_report_table_mode', 'custom');
+  const box = '#ysrtech_adminassistant_report_tables';
+  check('choosing tables shows tick boxes, with the recommended ones ticked', await page.isVisible(box) && (await page.$$eval(box + ' label[data-table] input:checked', (o) => o.length)) > 20);
+  const offered = await page.$$eval(box + ' label[data-table]', (l) => l.map((x) => x.dataset.table));
+  check('forbidden tables are not offered', !offered.some((t) => /^(admin_user|core_config_data|sales_flat_order_payment|customer_entity_varchar|oauth_token)$/.test(t)) && offered.includes('cms_page'), offered.length + ' offered');
+  await page.fill(box + ' [data-filter]', 'cms_');
+  const shown = await page.$$eval(box + ' label[data-table]', (l) => l.filter((x) => !x.hidden).map((x) => x.dataset.table));
+  check('the filter narrows the list', shown.length > 0 && shown.every((t) => t.includes('cms_')), shown.join(','));
+  // Untick everything, tick two, save: exactly those two are stored
+  await page.fill(box + ' [data-filter]', '');
+  await page.$$eval(box + ' label[data-table] input', (i) => i.forEach((x) => { x.checked = false; }));
+  await page.check(box + ' label[data-table="sales_flat_order"] input');
+  await page.check(box + ' label[data-table="cms_page"] input');
+  check('the count follows the ticks', (await page.innerText(box + ' [data-count]')).startsWith('2 '));
+  await page.check(box + ' [data-only]');
+  check('"Chosen only" shows just those', (await page.$$eval(box + ' label[data-table]', (l) => l.filter((x) => !x.hidden).length)) === 2);
+  await page.click('button[title="Save Config"]');
+  await page.waitForSelector('.messages li:has-text("The configuration has been saved")');
+  const stored = php("echo Mage::getModel('core/config_data')->load('ysrtech_adminassistant/report/tables', 'path')->getValue() . '|' . Mage::getModel('core/config_data')->load('ysrtech_adminassistant/report/table_mode', 'path')->getValue();").trim();
+  check('saving stores exactly the ticked tables', stored === 'cms_page,sales_flat_order|custom', stored);
+  check('and the page shows them ticked again', (await page.$$eval(box + ' label[data-table] input:checked', (o) => o.map((x) => x.value))).join(',') === 'cms_page,sales_flat_order');
+  php("Mage::getModel('core/config')->saveConfig('ysrtech_adminassistant/report/table_mode', 'recommended'); Mage::getModel('core/config')->deleteConfig('ysrtech_adminassistant/report/tables'); Mage::app()->getCacheInstance()->flush();");
   check('no script errors on any page', page.errors.length === 0, page.errors.join('; '));
 
   console.log('\nA role with orders only');

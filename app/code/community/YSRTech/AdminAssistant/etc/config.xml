@@ -2,7 +2,7 @@
 <config>
     <modules>
         <YSRTech_AdminAssistant>
-            <version>0.1.1</version>
+            <version>0.2.0</version>
         </YSRTech_AdminAssistant>
     </modules>
 
@@ -128,6 +128,10 @@
                                             <title>Report query (read-only SQL)</title>
                                             <sort_order>70</sort_order>
                                         </report>
+                                        <help translate="title" module="ysrtech_adminassistant">
+                                            <title>How-to help: the admin menu and where settings are</title>
+                                            <sort_order>80</sort_order>
+                                        </help>
                                     </children>
                                 </tools>
                             </children>
@@ -179,6 +183,7 @@
             </behaviour>
             <report>
                 <enabled>0</enabled>
+                <table_mode>recommended</table_mode>
                 <row_cap>200</row_cap>
                 <time_limit>5</time_limit>
             </report>

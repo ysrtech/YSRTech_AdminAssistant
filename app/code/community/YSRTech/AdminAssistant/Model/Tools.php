@@ -14,6 +14,7 @@ class YSRTech_AdminAssistant_Model_Tools
         'ysrtech_adminassistant/tool_campaigns',
         'ysrtech_adminassistant/tool_store',
         'ysrtech_adminassistant/tool_report',
+        'ysrtech_adminassistant/tool_help',
     ];
 
     /** What the model is sent back from one tool, at most */

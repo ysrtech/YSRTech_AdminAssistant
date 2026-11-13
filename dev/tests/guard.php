@@ -134,5 +134,21 @@ try {
     $check('the real guard refuses admin_user', true);
 }
 
+echo "\nTables that can never be chosen\n";
+foreach (['admin_user', 'admin_role', 'api_user', 'oauth_token', 'core_config_data', 'core_session', 'sales_flat_order_payment', 'sales_flat_quote_payment',
+          'sales_payment_transaction', 'customer_entity_varchar', 'customer_entity_text', 'persistent_session', 'paypal_cert', 'sales_billing_agreement',
+          'ysrtech_adminassistant_audit', 'ysrtech_emailcampaigns_webhook_event', 'some_module_api_tokens'] as $table) {
+    $check('forbidden: ' . $table, YSRTech_AdminAssistant_Model_Report_Guard::isForbiddenTable($table));
+}
+foreach (['sales_flat_order', 'customer_entity', 'catalog_product_entity_varchar', 'cms_page', 'ysrtech_emailcampaigns_queue'] as $table) {
+    $check('may be chosen: ' . $table, !YSRTech_AdminAssistant_Model_Report_Guard::isForbiddenTable($table));
+}
+
+echo "\nColumns named like secrets, in any table\n";
+foreach (['SELECT api_key FROM sales_flat_order', 'SELECT stripe_secret FROM sales_flat_order', 'SELECT reset_token FROM customer_entity', 'SELECT user_password FROM customer_entity'] as $sql) {
+    $refuses($sql, 'secret');
+}
+$allows('SELECT tracking_number FROM sales_flat_order');
+
 echo "\n{$pass} passed, {$fail} failed\n";
 exit($fail ? 1 : 0);

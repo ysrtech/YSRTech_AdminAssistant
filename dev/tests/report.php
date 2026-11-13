@@ -20,7 +20,7 @@ $check = static function (string $name, bool $ok, string $detail = '') use (&$pa
 
 $db     = Mage::getSingleton('core/resource')->getConnection('core_write');
 $config = Mage::getModel('core/config');
-$paths  = ['enabled', 'username', 'password', 'host', 'row_cap', 'time_limit'];
+$paths  = ['enabled', 'username', 'password', 'host', 'row_cap', 'time_limit', 'table_mode'];
 $saved  = [];
 foreach ($paths as $p) {
     $saved[$p] = Mage::getStoreConfig('ysrtech_adminassistant/report/' . $p, 0);
@@ -142,6 +142,41 @@ try {
 } catch (Throwable $e) {
     $check('the database refuses a write from this user, guard aside', true);
 }
+
+echo "\nChoosing tables\n";
+$cms = Mage::getSingleton('core/resource')->getTableName('cms/page');
+$backend = Mage::getModel('ysrtech_adminassistant/system_config_backend_tables')
+    ->setPath('ysrtech_adminassistant/report/tables')->setScope('default')->setScopeId(0)
+    ->setValue([$orders, $cms, 'admin_user', 'core_config_data', 'sales_flat_order_payment']);
+$backend->save();
+
+$set(['table_mode' => 'custom']);
+Mage::unregister('_singleton/ysrtech_adminassistant/report_guard');
+$check('saving a choice drops forbidden tables', Mage::getModel('core/config_data')->load('ysrtech_adminassistant/report/tables', 'path')->getValue() === $orders . ',' . $cms);
+$guard = Mage::getSingleton('ysrtech_adminassistant/report_guard');
+$check('the guard uses the choice', $guard->allowedTables() === [$orders, $cms], json_encode($guard->allowedTables()));
+try {
+    $guard->prepare('SELECT * FROM ' . Mage::getSingleton('core/resource')->getTableName('customer/entity'), 10);
+    $check('a recommended table left out of the choice is refused', false);
+} catch (Mage_Core_Exception $e) {
+    $check('a recommended table left out of the choice is refused', stripos($e->getMessage(), 'not on the allowed list') !== false);
+}
+$result = $fresh()->check();
+$text   = implode(' ', array_column($result['lines'], 'text'));
+$check('the check names a chosen table the user cannot read yet', stripos($text, $cms) !== false && stripos($text, 'cannot be read') !== false, $text);
+try {
+    $fresh()->run("SELECT COUNT(*) FROM {$cms}");
+    $check('and the database refuses it until it is granted', false);
+} catch (Mage_Core_Exception $e) {
+    $check('and the database refuses it until it is granted', stripos($e->getMessage(), 'refused') !== false, $e->getMessage());
+}
+$check('the GRANT statements follow the choice', strpos($fresh()->grantStatements($ro), $cms) !== false);
+$db->query('GRANT SELECT ON `' . (string) Mage::getConfig()->getResourceConnectionConfig('default_setup')->dbname . "`.`{$cms}` TO '{$ro}'@'localhost'");
+$r = $fresh()->run("SELECT COUNT(*) AS pages FROM {$cms}");
+$check('once granted, the chosen table answers', isset($r['rows'][0]['pages']));
+$set(['table_mode' => 'recommended']);
+Mage::getModel('core/config')->deleteConfig('ysrtech_adminassistant/report/tables');
+Mage::unregister('_singleton/ysrtech_adminassistant/report_guard');
 
 echo "\nThrough the tool, with the audit log\n";
 Mage::getSingleton('ysrtech_adminassistant/audit')->begin(null, null);

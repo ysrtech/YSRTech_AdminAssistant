@@ -106,6 +106,13 @@
                             <sort_order>10</sort_order>
                             <show_in_default>1</show_in_default>
                         </max_rounds>
+                        <procedures translate="label comment">
+                            <label>Store Procedures</label>
+                            <frontend_type>textarea</frontend_type>
+                            <comment>Optional. How things are done in this store, in plain words, for the assistant to follow when it explains how to do something: e.g. "Refunds over $200 need the owner's approval first" or "Ship Montreal orders with Purolator". They never let it do more than read.</comment>
+                            <sort_order>5</sort_order>
+                            <show_in_default>1</show_in_default>
+                        </procedures>
                         <history_days translate="label comment">
                             <label>Keep Conversations and Audit Log (days)</label>
                             <frontend_type>text</frontend_type>
@@ -130,6 +137,27 @@
                             <sort_order>10</sort_order>
                             <show_in_default>1</show_in_default>
                         </enabled>
+                        <table_mode translate="label comment">
+                            <label>Tables the Report Query May Read</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>ysrtech_adminassistant/system_config_source_tablemode</source_model>
+                            <comment>Payment, admin user, API and OAuth, saved settings, session and password-holding tables can never be read, whichever is chosen; they are not in the list.</comment>
+                            <sort_order>12</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <depends><enabled>1</enabled></depends>
+                        </table_mode>
+                        <tables translate="label comment">
+                            <label>Tables</label>
+                            <frontend_type>multiselect</frontend_type>
+                            <source_model>ysrtech_adminassistant/system_config_source_tables</source_model>
+                            <backend_model>ysrtech_adminassistant/system_config_backend_tables</backend_model>
+                            <frontend_model>ysrtech_adminassistant/adminhtml_system_config_tables</frontend_model>
+                            <can_be_empty>1</can_be_empty>
+                            <comment>Starts with the recommended tables chosen. After saving, run the updated statements below (or grant SELECT on the new tables) so the read-only user can read them; Check Database User names any it cannot. Columns that hold secrets are refused in any table.</comment>
+                            <sort_order>13</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <depends><enabled>1</enabled><table_mode>custom</table_mode></depends>
+                        </tables>
                         <grants translate="label">
                             <label>Database User to Create</label>
                             <frontend_type>label</frontend_type>

@@ -9,7 +9,8 @@ it cannot change anything.**
 ## How it works
 
 The header's search box is removed, and an **AI Assistant** button takes its
-place. The button opens a side drawer; Ctrl/⌘ K opens it too. (Staff whose
+place. The button opens a sidebar; Ctrl/⌘ K opens it too. On a wide screen
+the page moves over to make room, so its own buttons stay reachable. (Staff whose
 role can't see the assistant keep the header as their theme draws it.) A
 question goes to the AI provider along with the list of look-ups (tools) the
 person asking is allowed to use. The model asks for look-ups, the store runs
@@ -32,7 +33,8 @@ server is involved.
 | Sales | revenue, net revenue, orders, AOV and more for any period, broken down by day, week, month, store, status, payment method, country and so on; one period against another | Sales figures |
 | Email Campaigns (only when that module is installed) | campaign list and results with credited revenue, the 7/14/30-day email overview, segments, list growth; email tracking for one address (every message: delivered, real opens, clicks, links clicked, bounces, complaints, suppression and why); a campaign's recipients by what they did (opened, clicked, didn't open, bounced, complained, failed); automation results by automation or step | Email Campaigns results |
 | Store | setting values (secrets excluded), cron status, recent `system.log` / `exception.log` entries, store overview | Store settings, cron and logs |
-| Report query | read-only SQL over an allowed list of tables, for anything else | Report query |
+| Report query | read-only SQL over the chosen tables, for anything else | Report query |
+| How-to help | this store's admin menu (add-ons included, only what the role can open) and where a setting lives under System > Configuration, with its current value and a link | How-to help |
 
 ## Permissions
 
@@ -67,6 +69,16 @@ data, never instructions. No tool can write anything, so nothing in a tool
 result can lead to a change. Each tool also runs inside a read-only
 database transaction, so even a bug cannot write.
 
+## How-to questions
+
+"How do I create a coupon?", "where do I change the order email sender?":
+the assistant finds the real menu page or setting in this store with the
+how-to look-ups, links it, and gives the steps from its knowledge of
+OpenMage, saying which steps are general knowledge. **Store Procedures**
+(Behaviour settings) is free text for how things are done here, e.g.
+"refunds over $200 need the owner's approval"; the assistant follows it when
+explaining, and it never lets it do more than read.
+
 ## The report query
 
 Off until set up, under **System > Configuration > YSRTech > AI Assistant >
@@ -78,11 +90,17 @@ by table, to run as a database administrator. Then:
   anything is refused, and so is the store's own database user.
 - Only a single `SELECT` is accepted: no `WITH`, comments, variables,
   double-quoted strings, backslashes, `INTO`, locking, `SLEEP`/`BENCHMARK`
-  or `LOAD_FILE`. The tables come from an allowed list: no payment,
-  settings, admin, API or OAuth tables, and not `customer_entity_varchar`
-  (where password hashes live). Columns such as `password_hash`,
-  `rp_token`, `protect_code` and `tracking_token` are refused wherever they
-  appear, and dropped from `SELECT *` results.
+  or `LOAD_FILE`.
+- **Which tables:** "Recommended tables" (orders, customers, catalogue,
+  campaigns), or "Choose tables" to tick any others. Some tables can never
+  be read and are not offered: payment, admin users, API and OAuth, saved
+  settings, sessions, `customer_entity_varchar`/`_text` (password hashes and
+  reset tokens), and the assistant's own chats and audit log. After
+  choosing, run the updated `GRANT` statements; **Check Database User**
+  names any chosen table the user cannot read yet.
+- Columns that hold secrets (`password_hash`, `rp_token`, `protect_code`,
+  `tracking_token`, and anything named like a password, key, secret or
+  token) are refused in any table, and dropped from `SELECT *` results.
 - Each query runs in a read-only transaction with a statement time limit
   (5 seconds by default) and a row cap (200 by default).
 

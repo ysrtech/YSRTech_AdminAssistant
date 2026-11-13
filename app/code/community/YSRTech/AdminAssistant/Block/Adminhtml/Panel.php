@@ -48,6 +48,7 @@ class YSRTech_AdminAssistant_Block_Adminhtml_Panel extends Mage_Adminhtml_Block_
                 'email_overview' => $h->__('Reading email performance'), 'segment_list' => $h->__('Listing segments'), 'list_growth' => $h->__('Measuring list growth'),
                 'email_activity' => $h->__('Reading email tracking'), 'campaign_recipients' => $h->__('Listing campaign recipients'),
                 'automation_results' => $h->__('Reading automation results'),
+                'admin_menu' => $h->__('Finding it in the menu'), 'settings_search' => $h->__('Finding the setting'),
                 'config_value' => $h->__('Reading settings'), 'cron_status' => $h->__('Checking cron'), 'recent_errors' => $h->__('Reading the logs'),
                 'store_overview' => $h->__('Reading store setup'), 'report_schema' => $h->__('Reading the report tables'), 'report_query' => $h->__('Running a report query'),
             ],
@@ -77,6 +78,7 @@ class YSRTech_AdminAssistant_Block_Adminhtml_Panel extends Mage_Adminhtml_Block_
             $h->__('Top 20 customers this year'),
             $h->__('Sales this week compared with last week'),
             $h->__('Which products are low on stock?'),
+            $h->__('How do I create a coupon code?'),
         ];
     }
 

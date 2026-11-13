@@ -31,6 +31,12 @@ html.ysraa-open .ysraa-launch { background: var(--accent-soft); border-color: va
   background: var(--bg); border-left: 1px solid var(--border); box-shadow: -16px 0 40px rgba(24, 24, 27, .12); color: var(--text);
   animation: ysraa-in .18s ease-out; }
 @keyframes ysraa-in { from { transform: translateX(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+/* A sidebar, not a cover: where the screen is wide enough, the page makes
+   room for it, so its own buttons (Save Config and the like) stay reachable */
+@media (min-width: 1100px) {
+  html.ysraa-open body { padding-right: 440px; box-sizing: border-box; }
+  html.ysraa-open .content-header-floating { right: 440px; width: auto; }
+}
 @media (max-width: 720px) {
   .ysraa-backdrop { display: block; position: fixed; inset: 0; z-index: 9998; background: rgba(24, 24, 27, .35); }
   .ysraa-drawer { width: 100vw; }

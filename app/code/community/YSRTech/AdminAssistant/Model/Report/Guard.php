@@ -134,32 +134,98 @@ class YSRTech_AdminAssistant_Model_Report_Guard
     /**
      * @return string[] The real table names allowed in this store, prefix included
      */
+    /**
+     * Tables that can never be read, whatever is chosen in the settings:
+     * matched against the name without the store's table prefix. Payment
+     * records, admin users, API and OAuth credentials, saved settings (where
+     * keys live), sessions, and the customer value tables that hold password
+     * hashes and reset tokens. Also this module's own chats and audit log,
+     * which hold other admins' questions.
+     */
+    public const FORBIDDEN_TABLES = [
+        '/^admin_/', '/^api_/', '/^api2_/', '/^oauth_/', '/^core_config_data$/', '/^core_session$/', '/session/',
+        '/^persistent_/', '/^customer_entity_(varchar|text)$/', '/payment/', '/^sales_payment_transaction$/',
+        '/^paypal_/', '/^authorizenet/', '/^captcha_log$/', '/password/', '/token/', '/secret/', '/credential/',
+        '/^core_encryption/', '/billing_agreement/', '/recurring_profile/', '/^ysrtech_adminassistant_/', '/^ysrtech_emailcampaigns_webhook_event$/', '/^customer_flowpassword$/',
+    ];
+
+    /**
+     * Whether a table may never be read. Takes the real name, prefix included.
+     */
+    public static function isForbiddenTable(string $name): bool
+    {
+        $prefix = strtolower((string) Mage::getConfig()->getTablePrefix());
+        $bare   = strtolower($name);
+
+        if ($prefix !== '' && strpos($bare, $prefix) === 0) {
+            $bare = substr($bare, strlen($prefix));
+        }
+
+        foreach (self::FORBIDDEN_TABLES as $pattern) {
+            if (preg_match($pattern, $bare)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * The tables chosen for the report query: the recommended list, or the
+     * owner's own choice from the settings. Forbidden tables are left out
+     * either way, and so is anything that does not exist.
+     *
+     * @return string[] Real table names, prefix included
+     */
     public function allowedTables(): array
     {
         if ($this->_allowed === null) {
-            $resource = Mage::getSingleton('core/resource');
-            $names    = [];
+            $h      = Mage::helper('ysrtech_adminassistant');
+            $names  = $this->recommendedTables();
 
-            foreach (self::CORE_TABLES as $entity) {
-                $names[] = $resource->getTableName($entity);
+            if ($h->getConfig('report/table_mode') === 'custom') {
+                $exists = array_fill_keys(array_map('strtolower', Mage::getSingleton('core/resource')->getConnection('core_read')->listTables()), true);
+                $names  = array_filter(
+                    array_map('trim', explode(',', strtolower((string) $h->getConfig('report/tables')))),
+                    static fn ($t) => $t !== '' && isset($exists[$t])
+                );
             }
 
-            foreach (self::EAV_VALUE_TABLES as $base => $types) {
-                foreach ($types as $type) {
-                    $names[] = $resource->getTableName($base) . '_' . $type;
-                }
-            }
-
-            if (Mage::helper('core')->isModuleEnabled('YSRTech_EmailCampaigns')) {
-                foreach (self::EMAILCAMPAIGNS_TABLES as $entity) {
-                    $names[] = $resource->getTableName($entity);
-                }
-            }
-
+            $names = array_filter($names, static fn ($t) => !self::isForbiddenTable($t));
             $this->_allowed = array_fill_keys(array_map('strtolower', $names), true);
         }
 
         return array_keys($this->_allowed);
+    }
+
+    /**
+     * The tables offered by default: enough to answer questions about orders,
+     * customers, the catalogue and campaigns, and nothing more.
+     *
+     * @return string[]
+     */
+    public function recommendedTables(): array
+    {
+        $resource = Mage::getSingleton('core/resource');
+        $names    = [];
+
+        foreach (self::CORE_TABLES as $entity) {
+            $names[] = $resource->getTableName($entity);
+        }
+
+        foreach (self::EAV_VALUE_TABLES as $base => $types) {
+            foreach ($types as $type) {
+                $names[] = $resource->getTableName($base) . '_' . $type;
+            }
+        }
+
+        if (Mage::helper('core')->isModuleEnabled('YSRTech_EmailCampaigns')) {
+            foreach (self::EMAILCAMPAIGNS_TABLES as $entity) {
+                $names[] = $resource->getTableName($entity);
+            }
+        }
+
+        return array_values(array_unique(array_map('strtolower', $names)));
     }
 
     public function isAllowedTable(string $name): bool
@@ -169,9 +235,16 @@ class YSRTech_AdminAssistant_Model_Report_Guard
         return isset($this->_allowed[strtolower($name)]);
     }
 
+    /**
+     * Column names that read as secrets, refused in any table: a table the
+     * owner chose from another module can hold keys the list above does not
+     * name.
+     */
+    public const DENIED_COLUMN_PATTERN = '/(password|passwd|secret|api_?key|private_?key|_token$|^token$|_hash$|^hash$|cc_cid|cc_number|card_number|cvv)/i';
+
     public static function isDeniedColumn(string $name): bool
     {
-        return in_array(strtolower($name), self::DENIED_COLUMNS, true);
+        return in_array(strtolower($name), self::DENIED_COLUMNS, true) || (bool) preg_match(self::DENIED_COLUMN_PATTERN, $name);
     }
 
     /**
