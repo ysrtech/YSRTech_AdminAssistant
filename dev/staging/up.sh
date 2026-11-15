@@ -13,4 +13,4 @@ if ! pgrep -f "php -S 127.0.0.1:$PORT" >/dev/null; then
     (cd "$CORE_DIR" && php -S "127.0.0.1:$PORT" -t "$CORE_DIR" "$EC_DIR/dev/staging/router.php" >/tmp/staging-server.log 2>&1 &)
 fi
 sleep 1
-echo "staging: http://127.0.0.1:$PORT/index.php/admin ($(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:$PORT/index.php/admin"))"
+echo "staging: http://127.0.0.1:$PORT/index.php/admin ($(curl -s -o /dev/null --max-time 60 -w '%{http_code}' "http://127.0.0.1:$PORT/index.php/admin"))"
