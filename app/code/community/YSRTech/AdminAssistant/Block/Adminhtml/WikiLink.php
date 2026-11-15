@@ -23,7 +23,9 @@ class YSRTech_AdminAssistant_Block_Adminhtml_WikiLink extends Mage_Adminhtml_Blo
         return '<link rel="stylesheet" href="' . $this->escapeHtml($css) . '" />'
             . '<script>(function(){var h=document.querySelector(".header-right");if(!h||document.getElementById("ysrwk-link")){return;}'
             . 'var a=document.createElement("a");a.id="ysrwk-link";a.className="ysrwk-launch' . ($on ? ' on' : '') . '";a.href=' . json_encode($url) . ';'
-            . 'a.innerHTML=\'<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M4 4.5A1.5 1.5 0 0 1 5.5 3H20v15H5.5A1.5 1.5 0 0 0 4 19.5zM4 19.5A1.5 1.5 0 0 0 5.5 21H20v-3"/></svg><span>\'+' . json_encode($this->escapeHtml($label)) . '+\'</span>\';'
+            . 'a.title=' . json_encode($label) . ';a.setAttribute("aria-label",' . json_encode($label) . ');'
+            . 'a.innerHTML=\'<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="9.5" fill="none" stroke="currentColor" stroke-width="2"/>'
+            . '<path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M9.4 9.3a2.7 2.7 0 0 1 5.2 1c0 1.8-2.6 2.4-2.6 4"/><circle cx="12" cy="17.4" r="1.2" fill="currentColor"/></svg>\';'
             . 'var wrap=document.createElement("fieldset");wrap.className="ysrwk-slot";wrap.appendChild(a);'
             . 'var s=document.getElementById("global_search"),spot=h.querySelector(".ysraa-launch-slot")||(s?(s.closest("fieldset")||s.parentNode):null);'
             . 'spot&&spot.parentNode===h?h.insertBefore(wrap,spot):h.appendChild(wrap);})();</script>';

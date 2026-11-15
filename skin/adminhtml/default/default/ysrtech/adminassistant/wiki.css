@@ -11,7 +11,8 @@
 
 /* ---------- header button, left of the AI Assistant ---------- */
 .ysrwk-slot { border: 0; margin: 0 8px 0 0; padding: 0; min-width: 0; }
-.ysrwk-launch { display: inline-flex; align-items: center; gap: 7px; height: 30px; padding: 0 12px; vertical-align: middle; text-decoration: none !important;
+/* A round icon button, like the AI Assistant's beside it */
+.ysrwk-launch { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; padding: 0; vertical-align: middle; text-decoration: none !important;
   border: 1px solid var(--border-strong); border-radius: 99px; background: var(--surface); color: var(--text) !important; font-size: 12.5px; font-weight: 600;
   box-shadow: 0 1px 2px rgba(24, 24, 27, .06); }
 .ysrwk-launch:hover, .ysrwk-launch.on { border-color: var(--accent); color: var(--accent-text) !important; }

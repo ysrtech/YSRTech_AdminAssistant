@@ -9,7 +9,7 @@ it cannot change anything.**
 ## How it works
 
 The header's search box is removed, and an **AI Assistant** button takes its
-place. The button opens a sidebar; Ctrl/⌘ K opens it too. On a wide screen
+place. The button (the ✦ icon) opens a sidebar; Ctrl/⌘ K opens it too. On a wide screen
 the page moves over to make room, so its own buttons stay reachable. (Staff whose
 role can't see the assistant keep the header as their theme draws it.) A
 question goes to the AI provider along with the list of look-ups (tools) the
@@ -71,7 +71,7 @@ database transaction, so even a bug cannot write.
 
 ## The wiki
 
-A **Wiki** button in the admin header, left of the AI Assistant, opens a wiki
+A **Wiki** button (a question-mark icon) in the admin header, left of the AI Assistant, opens a wiki
 for how things are done in this store: OpenMage itself and every YSRTech
 module. It starts with 67 pages (orders, catalogue, customers, promotions,
 content, settings, Email Campaigns, the AI Assistant, and this store's own

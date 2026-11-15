@@ -34,7 +34,9 @@
   button.type = 'button';
   button.className = 'ysraa-launch';
   button.setAttribute('aria-controls', 'ysraa');
-  button.innerHTML = '<span class="ysraa-spark" aria-hidden="true"></span><span>' + esc(label('AI Assistant')) + '</span>';
+  button.title = label('AI Assistant (Ctrl/⌘ K)');
+  button.setAttribute('aria-label', label('AI Assistant'));
+  button.innerHTML = '<span class="ysraa-spark" aria-hidden="true"></span>';
 
   // The search box goes; the button takes its place, so it sits where the box was
   var search = document.getElementById('global_search');
